@@ -42,15 +42,15 @@ def save(html):
 
 class Mackenzie():
     def __init__(self):
-        self.moodle_home = 'http://moodle.mackenzie.br/moodle/'
-        self.moodle_login = self.moodle_home + 'login/index.php?authldap_skipntlmsso=1'
-        self.tia_home = 'https://www3.mackenzie.br/tia/'
-        self.tia_index = self.tia_home + 'index.php'
-        self.tia_verifica = self.tia_home + 'verifica.php'
-        self.tia_index2 = self.tia_home + 'index2.php'
-        self.tia_horarios = self.tia_home + 'horarChamada.php'
-        self.tia_notas = self.tia_home + 'notasChamada.php'
-        self.usage = '''Mack App\n\nUsage: python3 mackapp.py [-g] [-m tia] [-p senha] [-i] [-h] [-v] targets\n
+        self._moodle_home = 'http://moodle.mackenzie.br/moodle/'
+        self._moodle_login = self._moodle_home + 'login/index.php?authldap_skipntlmsso=1'
+        self._tia_home = 'https://www3.mackenzie.br/tia/'
+        self._tia_index = self._tia_home + 'index.php'
+        self._tia_verifica = self._tia_home + 'verifica.php'
+        self._tia_index2 = self._tia_home + 'index2.php'
+        self._tia_horarios = self._tia_home + 'horarChamada.php'
+        self._tia_notas = self._tia_home + 'notasChamada.php'
+        self._usage = '''Mack App\n\nUsage: python3 mackapp.py [-g] [-m tia] [-p senha] [-i] [-h] [-v] targets\n
                 Options:
                     -g      interface gráfica
                     -h 		mostrar help
@@ -70,18 +70,18 @@ class Mackenzie():
 #                       MOODLE
 # ----------------------------------------------------
     def login_moodle(self, user, pwd, v):
-        res = session.get(self.moodle_home)
+        res = session.get(self._moodle_home)
         data = {'username':user, 'password':pwd}
         cookies = dict(res.cookies)
-        headers = dict(referer=self.tia_index)
-        res = session.post(self.moodle_login, data=data, cookies=cookies, headers=headers, allow_redirects=True)
+        headers = dict(referer=self._tia_index)
+        res = session.post(self._moodle_login, data=data, cookies=cookies, headers=headers, allow_redirects=True)
         self.logged_in = 'Minhas Disciplinas/Cursos' in res.text
         if v: print('')
     
     def get_materias(self, depth=0):
-        return self.extract_materias(session.get(self.moodle_home).text, depth)
+        return self._extract_materias(session.get(self._moodle_home).text, depth)
     
-    def extract_materias(self, html, depth):
+    def _extract_materias(self, html, depth):
         refined = {}
         bs = BeautifulSoup(html, 'lxml')
         save(html)
@@ -133,17 +133,17 @@ class Mackenzie():
     # ----------------------------------------------------
 
     def login_tia(self, user, pwd, v):
-        res = session.get(self.tia_index)
+        res = session.get(self._tia_index)
         token = list(set(html.fromstring(res.text).xpath("//input[@name='token']/@value")))[0]
         data = {'alumat':user, 'pass':pwd, 'token':token, 'unidade':'001'}
         cookies = dict(res.cookies)
-        headers = dict(referer=self.tia_index)
-        res = session.post(self.tia_verifica, data=data, cookies=cookies, headers=headers, allow_redirects=True)
-        logged_in = user in session.get(self.tia_index2).text
+        headers = dict(referer=self._tia_index)
+        res = session.post(self._tia_verifica, data=data, cookies=cookies, headers=headers, allow_redirects=True)
+        logged_in = user in session.get(self._tia_index2).text
         if v: print( '' 'Entrou no TIA')
         return logged_in
 
-    def extract_horarios(self, html):
+    def _extract_horarios(self, html):
         refined = {}
         dias = {0:'Seg',1:'Ter',2:'Qua',3:'Qui',4:'Sex',5:'Sab'}
         lists = pd.read_html(html)[1].values.tolist()
@@ -159,9 +159,9 @@ class Mackenzie():
         return refined
 
     def get_horarios(self):
-        return self.extract_horarios(session.get(self.tia_horarios).text)
+        return self._extract_horarios(session.get(self._tia_horarios).text)
 
-    def extract_notas(self, html):
+    def _extract_notas(self, html):
         refined = {}
         cod_notas = {2:'A',3:'B',4:'C',5:'D',6:'E',7:'F',8:'G',9:'H',10:'I',11:'J',
                      12:'NI1',13:'NI2',14:'SUB',15:'PARTIC',16:'MI',17:'PF',18:'MF'}
@@ -177,7 +177,7 @@ class Mackenzie():
         return refined
 
     def get_notas(self):
-        return self.extract_notas(session.get(self.tia_notas).text)
+        return self._extract_notas(session.get(self._tia_notas).text)
     
 # ----------------------------------------------------
 #                       MAIN
@@ -201,7 +201,7 @@ def main(args):
     argskv = process_args(args)
     mack = Mackenzie()
     if 'h' in argskv: 
-        print(mack.usage)
+        print(mack._usage)
         return
     v = 'v' in argskv
     i = 'i' in argskv
