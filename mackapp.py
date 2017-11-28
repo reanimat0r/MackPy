@@ -3,15 +3,13 @@ import getpass
 import json
 import os
 import pickle
-import re
 import signal
-import sys
+from tkinter import *
 
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from lxml import html
-from tkinter import simpledialog
 
 
 # ----------------------------------------------------
@@ -44,15 +42,13 @@ def save(html):
 
 
 class Mackenzie():
-	def __init__(self, cookie_file='cookies'):
-		self.config_file = os.path.expanduser("~/mack.ini")
+	def __init__(self, cross_plat_config_file='~/mack.ini', cookie_file='cookies'):
+		self.config_file = os.path.expanduser(cross_plat_config_file)
+		self.cookie_file = cookie_file
 		try:
-			config = pickle.load(open(self.config_file, 'rb'))
+			self.config = pickle.load(open(self.config_file, 'rb'))
 		except:
-			config = {}
-		if not config:
-			config['user'] = simpledialog.askstring('Authentication', 'Username:')
-			config['password'] = simpledialog.askstring('Authentication', 'Password:', show='*')
+			self.config = {}
 		self._moodle_home = 'http://moodle.mackenzie.br/moodle/'
 		self._moodle_login = self._moodle_home + 'login/index.php?authldap_skipntlmsso=1'
 		self._tia_home = 'https://www3.mackenzie.br/tia/'
@@ -67,12 +63,12 @@ class Mackenzie():
 			self.session.cookies = pickle.load(open(self.cookie_file, 'rb'))
 		except:
 			pass
-		atexit.register(pickle.dump, [self.session.cookies, open(cookie_file, 'wb')])
-		atexit.register(pickle.dump, [self.config, open(self.config_file, 'wb')])
+		atexit.register(self.dump_cookie_file)
+		atexit.register(self.dump_config_file)
 		self._usage = '''Mack App\n\nUsage: python3 mackapp.py [-g] [-m tia] [-p senha] [-i] [-h] [-v] targets\n
 				Options:
 					-g      interface gráfica
-					-h 		mostrar help
+					-h 		isto
 					-m 		tia do aluno
 					-p		senha pre-configurada opcional
 					-i		modo interativo
@@ -85,20 +81,29 @@ class Mackenzie():
 				target pode ser notas, horarios, tarefas no momento
 			'''
 
+	def dump_cookie_file(self):
+		pickle.dump(self.session.cookies, open(self.cookie_file, 'wb'))
+
+	def dump_config_file(self):
+		pickle.dump(self.config, open(self.config_file, 'wb'))
+
 	# ----------------------------------------------------
 	#                       MOODLE
 	# ----------------------------------------------------
 	def login_moodle(self, v=False):
+		self.logging_in = True
 		res = self.session.get(self._moodle_home)
 		data = {'username': self.config['user'], 'password': self.config['password']}
 		cookies = dict(res.cookies)
 		headers = dict(referer=self._tia_index)
 		res = self.session.post(self._moodle_login, data=data, cookies=cookies, headers=headers, allow_redirects=True)
 		self.logged_in = 'Minhas Disciplinas/Cursos' in res.text
-		if v: print('')
+		self.logging_in = False
+		if v: print('Logged in.' if self.logged_in else 'Could not log in.')
+		return self.logged_in
 
 	def get_materias(self, depth=0):
-		if not self.logged_in: raise Exception('Not logged in')
+		if not self.logged_in and not self.logging_in: raise Exception('Not logged in')
 		return self._extract_materias(self.session.get(self._moodle_home).text, depth)
 
 	def _extract_materias(self, html, depth):
@@ -237,8 +242,9 @@ def main(args):
 	logged_in_moodle = False
 	to_do = list(filter(lambda k: not k.startswith('-'), argskv.keys()))
 	if not to_do and not i: i = True
-	m = argskv['m'] if 'm' in argskv else input('Matricula: ')
-	p = argskv['p'] if 'p' in argskv else getpass.getpass('Senha: ')
+	while not m or not p:
+		m = argskv['m'] if 'm' in argskv else input('Matricula: ')
+		p = argskv['p'] if 'p' in argskv else getpass.getpass('Senha: ')
 	while True:
 		if i:
 			try:
