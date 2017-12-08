@@ -7,3 +7,5 @@ Background notification
 Definir o melhor intervalo para checar novas notas (pode ser configurado pelo usuario?)
 
 Integração com Telegram (?)
+
+Self update via github

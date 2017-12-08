@@ -42,13 +42,13 @@ def save(html):
 
 
 class Mackenzie():
-	def __init__(self, cross_plat_config_file='~/mack.ini', cookie_file='cookies'):
+	def __init__(self, memory=False, cross_plat_config_file='~/mack.ini', cookie_file='cookies'):
 		self.config_file = os.path.expanduser(cross_plat_config_file)
 		self.cookie_file = cookie_file
 		try:
 			self.config = pickle.load(open(self.config_file, 'rb'))
 		except:
-			self.config = {}
+			self.config = {'materias_filepath':'materias.mack'}
 		self._moodle_home = 'http://moodle.mackenzie.br/moodle/'
 		self._moodle_login = self._moodle_home + 'login/index.php?authldap_skipntlmsso=1'
 		self._tia_home = 'https://www3.mackenzie.br/tia/'
@@ -87,6 +87,12 @@ class Mackenzie():
 	def dump_config_file(self):
 		pickle.dump(self.config, open(self.config_file, 'wb'))
 
+	def save(self): pickle.dump(self.materias, self.config['materias_filepath'])
+
+	def recall(self):
+		self.materias = pickle.load(self.config['materias_filepath'])
+		return self.materias
+
 	# ----------------------------------------------------
 	#                       MOODLE
 	# ----------------------------------------------------
@@ -104,7 +110,8 @@ class Mackenzie():
 
 	def get_materias(self, depth=0):
 		if not self.logged_in and not self.logging_in: raise Exception('Not logged in')
-		return self._extract_materias(self.session.get(self._moodle_home).text, depth)
+		self.materias = self._extract_materias(self.session.get(self._moodle_home).text, depth)
+		return self.materias
 
 	def _extract_materias(self, html, depth):
 		refined = {}
@@ -240,11 +247,12 @@ def main(args):
 	i = 'i' in argskv
 	logged_in_tia = False
 	logged_in_moodle = False
-	to_do = list(filter(lambda k: not k.startswith('-'), argskv.keys()))
-	if not to_do and not i: i = True
+	command_seq = list(filter(lambda k: not k.startswith('-'), argskv.keys()))
+	if not command_seq and not i: i = True # if theres no command, force interactive
+	m,n=None,None
 	while not m or not p:
-		m = argskv['m'] if 'm' in argskv else input('Matricula: ')
-		p = argskv['p'] if 'p' in argskv else getpass.getpass('Senha: ')
+		m = argskv['m'] if 'm' in argskv else mack.config['user'] if 'user' in mack.config else input('Matricula: ')
+		p = argskv['p'] if 'p' in argskv else mack.config['password'] if 'password' in mack.config else getpass.getpass('Senha: ')
 	while True:
 		if i:
 			try:
@@ -253,7 +261,7 @@ def main(args):
 				continue
 		else:
 			try:
-				o = to_do.pop()
+				o = command_seq.pop()
 			except:
 				break
 		out = None
@@ -267,7 +275,6 @@ def main(args):
 			if not logged_in_tia: logged_in_tia = mack.login_tia(m, p, v)
 			out = mack.get_horarios()
 		print(pretty_dict(out))
-
 		if not i: break
 
 

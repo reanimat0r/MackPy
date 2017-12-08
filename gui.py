@@ -1,3 +1,5 @@
+import pickle
+import json
 from threading import Thread
 import colorsys
 from tkinter import messagebox
@@ -19,8 +21,8 @@ class MackenzieGUI():
 		self.root.title('MackApp')
 		self.size = (800, 600)
 		self.root.geometry(str(self.size[0]) + 'x' + str(self.size[1]))
-		self.root.protocol("WM_DELETE_WINDOW", sys.exit)
-		self.bg = '#F00'
+		self.root.protocol("WM_DELETE_WINDOW", self.root.withdraw)
+		self.bg = '#A00'
 
 		self.left_frame = Frame(self.root, bg=self.bg, width=800, height=self.size[1])
 		self.left_frame.grid_propagate(0)
@@ -33,10 +35,14 @@ class MackenzieGUI():
 		self.materias_list.grid()
 
 		self.tarefas_list = Listbox(self.left_frame, bg=self.bg)
+		self.tarefas_list.bind('<<ListboxSelect>>', self._tarefa_clicked)
 		self.tarefas_list.grid(row=0,column=1)
 
-		self.indicator = Label(self.left_frame, text='Not logged in')
-		self.indicator.grid(row=1, column=0, sticky='sw')
+		self.indicator_label = Label(self.left_frame, text='Not logged in')
+		self.indicator_label.grid(row=1, column=0, sticky='sw')
+
+		self.current_tarefa_label = Label(self.left_frame, text='')
+		self.current_tarefa_label.grid(row=1, column=0, sticky='sw')
 
 		self.root.after(1, self._startup)
 		self.root.mainloop()
@@ -52,31 +58,51 @@ class MackenzieGUI():
 	def _startup(self):
 		self._UI_update_materias()
 
+	def _tarefa_clicked(self, evt):
+		w = evt.widget
+		index = int(w.curselection()[0])
+		value = w.get(index)
+		print(value)
+
 	def _UI_update_materias(self):
 		persist = 3
 		while len(self.mack.config) < 2 or not self.mack.config['user'] or not self.mack.config['password'] and persist:
 			self.mack.config['user'] = simpledialog.askstring('Authentication', 'TIA:')
 			self.mack.config['password'] = simpledialog.askstring('Authentication', 'Password:', show='*')
 			persist-=1
-		self.indicator.config(text='Logging in')
+		self.indicator_label.config(text='Logging in')
 		self.mack.login_moodle(v=True)
-		if not self.mack.logged_in: self.indicator.config(text='Logging in failed')
-		self.indicator.config(text='Retrieving materias')
-		materias = self.mack.get_materias(depth=10)
+		if not self.mack.logged_in: self.indicator_label.config(text='Logging in failed')
+		self.indicator_label.config(text='Retrieving materias')
+		self.materias = self.mack.get_materias(depth=10)
 		# horarios = self.mack.get_horarios()
 		# notas = self.mack.get_notas()
-		for m in materias: self.materias_list.insert(0, m)
-		for ix,nome_materia in enumerate(materias):
-			topicos_materia = materias[nome_materia].values()
-			for topicos in topicos_materia:
-				for nome_topico in topicos:
-					item = topicos[nome_topico]
-					print(item)
-					if item['type'].lower() == 'tarefa': self.tarefas_list.insert(0, item)
 
-		self.indicator.config(text='Startup done')
+		for m in self.materias: self.materias_list.insert(0, m)
+		for nome_materia,topicos_materia in self.materias.items():
+			for k,topico in topicos_materia.items():
+				print(k)
+				if isinstance(topico, dict):
+					for subtopico in topico:
+						sub = topico[subtopico]
+						if 'Tarefa' in sub: print(sub)
+						# for evt in sub:
+						# 	print(evt)
+				else: print(topico)
+				# if nome_topico is not 'link':
+				# 	item = topicos[nome_topico]
+				# 	if item['type'] == 'Tarefa': self.tarefas_list.insert(0, item)
 
+		self.indicator_label.config(text='Startup done')
+
+
+	def _is_same_dict(self, d1, d2):
+		for k in d1.keys():
+			if k not in d2: return False
+			else:
+				if type(d1[k]) is dict and not self._is_same_dict(d1[k],d2[k]): return False
+				elif d1[k] != d2[k]: return False
+		return True
 
 if __name__ == '__main__':
 	gui = MackenzieGUI()
-
