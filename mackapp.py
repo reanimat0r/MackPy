@@ -15,7 +15,7 @@ from lxml import html
 # ----------------------------------------------------
 #                       SETUP
 # ----------------------------------------------------
-from entities import Materia, Topico, Subtopico
+from entities import Materia, Topico, Subtopico, Tarefa
 
 
 def signal_handler(signal, frame):
@@ -52,6 +52,8 @@ class Mackenzie():
 		except:
 			self.config = {'materias_filepath':'materias.mack'}
 		if recall: self.recall()
+		try: self.materias = pickle.load(open(self.config['materias_filepath'],'rb'))
+		except: print('COULD NOT LOAD MATERIAS')
 		self._moodle_home = 'http://moodle.mackenzie.br/moodle/'
 		self._moodle_login = self._moodle_home + 'login/index.php?authldap_skipntlmsso=1'
 		self._tia_home = 'https://www3.mackenzie.br/tia/'
@@ -116,9 +118,13 @@ class Mackenzie():
 		if v: print('Logged in.' if self.logged_in else 'Could not log in.')
 		return self.logged_in
 
+	def _diff(self, m, nm):
+		pass # THE JOINT
+
 	def get_materias(self):
 		if not self.logged_in and not self.logging_in: raise Exception('Not logged in')
-		self.materias = self._fetch_materias(self.session.get(self._moodle_home).text)
+		self.new_materias = self._fetch_materias(self.session.get(self._moodle_home).text) # apply Diff
+		self._diff(self.materias, self.new_materias)
 		return self.materias
 
 	def _fetch_materias(self, html):
@@ -131,16 +137,21 @@ class Mackenzie():
 				title = a.get('title')
 				if title not in materias and re.search(r'\s\d{4}/\d+$', title) is not None:
 					materia = Materia(a['title'],a['href'])
-					materias.append(materia)
+					if not any(materia.name in m.name for m in materias):
+						materias.append(materia)
 		for materia in materias:
 			bs = BeautifulSoup(self.session.get(materia.link).text, 'lxml')
 			i = 1
+			no_topic_name_count = 10
 			while True:
 				sec = bs.find(id='section-' + str(i))
 				if sec is None: break
 				as_ = BeautifulSoup(str(sec), 'lxml').find_all('a', href=True)
 				topic_name = sec.get('aria-label')
-				if not topic_name: continue
+				if not topic_name:
+					no_topic_name_count-=1
+					if not no_topic_name_count: break
+					continue
 				materia.topicos.append(Topico(topic_name))
 				for a in as_:
 					if a.get('onclick') is not None:
@@ -148,22 +159,24 @@ class Mackenzie():
 						if sub_topic_name is None: continue
 						sub_topic_link = a['href']
 						t = materia.topicos[-1]
-						if not any(st.name for st in t.subtopicos):
+						if not any(sub_topic_name == st.name for st in t.subtopicos):
 							t.subtopicos.append(Subtopico(sub_topic_name, sub_topic_link, sub_topic_type))
 						if sub_topic_type == 'Tarefa':
 							tarefa_table = BeautifulSoup(self.session.get(sub_topic_link).text,
 							                             'lxml').find_all('table', class_='generaltable')[0]
 							tds = tarefa_table.find_all('td')
 							j = 0
+							tarefa = Tarefa()
 							tarefa_ik = None
 							for td in tds:
 								tarefa_attrib = td.text
 								j += 1
-								if j == 10: break # why?? comment more often please
+								if j == 10: break # exceeded useful table rows
 								if not tarefa_ik: tarefa_ik = tarefa_attrib.rstrip()
 								else:
-									t.subtopicos[-1].tarefas.update({tarefa_ik:tarefa_attrib})
+									tarefa.info.update({tarefa_ik:tarefa_attrib})
 									tarefa_ik = None
+							if tarefa: t.subtopicos[-1].tarefas.append(tarefa)
 				i += 1
 		return materias
 
@@ -251,7 +264,7 @@ def main(argv):
 		print(mack._usage)
 		return
 	v = 'v' in argskv
-	i = 'i' in argskv
+	i = 'i' in argskv or not argskv
 	logged_in_tia = False
 	logged_in_moodle = False
 	command_seq = list(filter(lambda k: not k.startswith('-'), argskv.keys()))
@@ -263,8 +276,9 @@ def main(argv):
 	while True:
 		if i:
 			try:
-				o = input(''' Operacoes:\n\tTarefas\n\tNotas\n\tHorarios\n\nOperacao: ''', end='').lower()
-			except:
+				o = input(''' Operacoes:\n\tTarefas\n\tNotas\n\tHorarios\n\nOperacao: ''').lower()
+			except Exception as e:
+				print(e)
 				continue
 		else:
 			try:
@@ -273,8 +287,8 @@ def main(argv):
 				break
 		out = None
 		if o == 'tarefas':
-			if not logged_in_moodle: logged_in_moodle = mack.login_moodle(m, p, v)
-			out = mack.get_materias(3)
+			if not logged_in_moodle: logged_in_moodle = mack.login_moodle(v=v)
+			out = mack.get_materias()
 		elif o == 'notas':
 			if not logged_in_tia: logged_in_tia = mack.login_tia(m, p, v)
 			out = mack.get_notas()

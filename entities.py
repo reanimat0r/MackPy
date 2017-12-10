@@ -1,3 +1,6 @@
+import json
+
+
 class Materia:
 	def __init__(self, name, link):
 		if not name or not link: raise Exception('NO NAME OR NO LINK')
@@ -5,8 +8,11 @@ class Materia:
 		self.link = link
 		self.topicos = []
 
+	def all_tarefas(self):
+		return [t.all_tarefas() for t in self.topicos]
+
 	def __str__(self):
-		return '-' * 20+self.name + self.link + '\n'.join(self.topicos)
+		return '-' * 30 + '\n' + self.name + '\n' + self.link + '\n\t'.join([str(t) for t in self.topicos]) + '-' * 30
 
 
 class Topico:
@@ -15,8 +21,11 @@ class Topico:
 		self.name = name
 		self.subtopicos = []
 
+	def all_tarefas(self):
+		return [st.tarefas for st in self.subtopicos]
+
 	def __str__(self):
-		return '-' * 15 + self.name + '\n'.join(self.subtopicos)
+		return '-' * 20 + '\n' + self.name + '\n\t'.join([str(st) for st in self.subtopicos]) + '-' * 20
 
 
 class Subtopico:
@@ -24,18 +33,19 @@ class Subtopico:
 		if not name or not link or not type: raise Exception('NO NAME OR NO LINK OR NO TYPE')
 		self.name = name
 		self.link = link
-		self.tarefas = {}  # order by date?
+		self.tarefas = []  # order by date?
 
 	def __str__(self):
-		return '-' * 10 + self.name + self.link + '\n'.join(self.tarefas)
+		return '-' * 10 + '\n' + self.name + '\n' + self.link + '\n\t'.join(
+			[str(trf) for trf in self.tarefas]) + '-' * 10
 
 
 class Tarefa:
-	def __init__(self, name, link, type):
-		if not name or not link or not type: raise Exception('NO NAME OR NO LINK OR NO TYPE')
-		self.name = name
-		self.link = link
-		self.type = type
+	def __init__(self):
+		self.info = {}
+
+	def __len__(self):
+		return len(self.info)
 
 	def __str__(self):
-		return self.name + self.link + self.type
+		return json.dumps(self.info, ensure_ascii=False, indent=4)

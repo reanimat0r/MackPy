@@ -69,18 +69,19 @@ class MackenzieGUI():
 		if not self.mack.logged_in: self.indicator_label.config(text='Logging in failed')
 		self.indicator_label.config(text='Retrieving materias')
 		self.materias = self.mack.get_materias()
+		# for m in self.materias: print(m)
 		# horarios = self.mack.get_horarios()
 		# notas = self.mack.get_notas()
 
-		for m in self.materias: self.materias_list.insert(0, m)
-		for nome_materia,topicos_materia in self.materias.items():
-			for k,topico in topicos_materia.items():
-				if isinstance(topico, dict):
-					for subtopico in topico:
-						sub = topico[subtopico]
-						if isinstance(sub, dict):
-							print(sub)
-				else: print(topico)
+		# for m in self.materias: self.materias_list.insert(0, m)
+		# for nome_materia,topicos_materia in self.materias.items():
+		# 	for k,topico in topicos_materia.items():
+		# 		if isinstance(topico, dict):
+		# 			for subtopico in topico:
+		# 				sub = topico[subtopico]
+		# 				if isinstance(sub, dict):
+		# 					print(sub)
+		# 		else: print(topico)
 		self.indicator_label.config(text='Startup done')
 
 	def _is_same_dict(self, d1, d2):
