@@ -1,19 +1,13 @@
-import pickle
-import json
-from threading import Thread
 import colorsys
-from tkinter import messagebox
+from tkinter import *
 from tkinter import simpledialog
 
-import sys
-import traceback
 from mackapp import Mackenzie
-from tkinter import *
 
 
 class MackenzieGUI():
 	def __init__(self):
-		self.mack = Mackenzie()
+		self.mack = Mackenzie(recall=True)
 		self.root = Tk()
 		# self.root.report_callback_exception = lambda *args: messagebox.showinfo(title='Exception:',
 		#                                                                         message=traceback.format_exception(
@@ -74,27 +68,20 @@ class MackenzieGUI():
 		self.mack.login_moodle(v=True)
 		if not self.mack.logged_in: self.indicator_label.config(text='Logging in failed')
 		self.indicator_label.config(text='Retrieving materias')
-		self.materias = self.mack.get_materias(depth=10)
+		self.materias = self.mack.get_materias()
 		# horarios = self.mack.get_horarios()
 		# notas = self.mack.get_notas()
 
 		for m in self.materias: self.materias_list.insert(0, m)
 		for nome_materia,topicos_materia in self.materias.items():
 			for k,topico in topicos_materia.items():
-				print(k)
 				if isinstance(topico, dict):
 					for subtopico in topico:
 						sub = topico[subtopico]
-						if 'Tarefa' in sub: print(sub)
-						# for evt in sub:
-						# 	print(evt)
+						if isinstance(sub, dict):
+							print(sub)
 				else: print(topico)
-				# if nome_topico is not 'link':
-				# 	item = topicos[nome_topico]
-				# 	if item['type'] == 'Tarefa': self.tarefas_list.insert(0, item)
-
 		self.indicator_label.config(text='Startup done')
-
 
 	def _is_same_dict(self, d1, d2):
 		for k in d1.keys():

@@ -15,6 +15,9 @@ from lxml import html
 # ----------------------------------------------------
 #                       SETUP
 # ----------------------------------------------------
+from entities import Materia, Topico, Subtopico
+
+
 def signal_handler(signal, frame):
 	sys.exit(0)
 
@@ -40,15 +43,15 @@ def save(html):
 	with open('D:\\Google Drive\\Programming\\Python\\MackApp 3.0\\page.html', 'wb') as f:
 		f.write(bytes(html, 'utf-8'))
 
-
 class Mackenzie():
-	def __init__(self, memory=False, cross_plat_config_file='~/mack.ini', cookie_file='cookies'):
+	def __init__(self, recall=False, cross_plat_config_file='~/mack.ini', cookie_file='cookies'):
 		self.config_file = os.path.expanduser(cross_plat_config_file)
 		self.cookie_file = cookie_file
 		try:
 			self.config = pickle.load(open(self.config_file, 'rb'))
 		except:
 			self.config = {'materias_filepath':'materias.mack'}
+		if recall: self.recall()
 		self._moodle_home = 'http://moodle.mackenzie.br/moodle/'
 		self._moodle_login = self._moodle_home + 'login/index.php?authldap_skipntlmsso=1'
 		self._tia_home = 'https://www3.mackenzie.br/tia/'
@@ -65,6 +68,7 @@ class Mackenzie():
 			pass
 		atexit.register(self.dump_cookie_file)
 		atexit.register(self.dump_config_file)
+		atexit.register(self.save)
 		self._usage = '''Mack App\n\nUsage: python3 mackapp.py [-g] [-m tia] [-p senha] [-i] [-h] [-v] targets\n
 				Options:
 					-g      interface gráfica
@@ -90,8 +94,12 @@ class Mackenzie():
 	def save(self): pickle.dump(self.materias, self.config['materias_filepath'])
 
 	def recall(self):
-		self.materias = pickle.load(self.config['materias_filepath'])
-		return self.materias
+		try:
+			self.materias = pickle.load(open(self.config['materias_filepath'],'rb'))
+			return True
+		except:
+			self.materias = None
+			return False
 
 	# ----------------------------------------------------
 	#                       MOODLE
@@ -108,57 +116,56 @@ class Mackenzie():
 		if v: print('Logged in.' if self.logged_in else 'Could not log in.')
 		return self.logged_in
 
-	def get_materias(self, depth=0):
+	def get_materias(self):
 		if not self.logged_in and not self.logging_in: raise Exception('Not logged in')
-		self.materias = self._extract_materias(self.session.get(self._moodle_home).text, depth)
+		self.materias = self._extract_materias(self.session.get(self._moodle_home).text)
 		return self.materias
 
-	def _extract_materias(self, html, depth):
-		refined = {}
+	def _extract_materias(self, html):
+		materias = []
 		bs = BeautifulSoup(html, 'lxml')
 		save(html)
 		as_ = bs.find_all('a', href=True)
 		for a in as_:
 			if 'course' in a['href'] and a.get('title') is not None:
 				title = a.get('title')
-				if title not in refined:
-					if re.search(r'\s\d{4}\/\d+$', title) is not None:
-						refined[a['title']] = {'link': a['href']}
-		if depth > 0:
-			for k, v in refined.items():
-				bs = BeautifulSoup(self.session.get(v['link']).text, 'lxml')
-				i = 1
-				while True:
-					sec = bs.find(id='section-' + str(i))
-					if sec is None: break
-					as_ = BeautifulSoup(str(sec), 'lxml').find_all('a', href=True)
-					topic_name = sec.get('aria-label')
-					topics = {}
-					for a in as_:
-						if a.get('onclick') is not None:
-							sub_topic, sub_topic_type = ' '.join(a.text.split()[:-1]), ''.join(a.text.split()[-1:])
-							if sub_topic is None: continue
-							sub_topic_link = a['href']
-							if sub_topic not in topics: topics[sub_topic] = {'type': sub_topic_type}
-							topics[sub_topic]['link'] = sub_topic_link
-							if depth > 1 and sub_topic_type == 'Tarefa':
-								tarefa_table = BeautifulSoup(self.session.get(sub_topic_link).text,
-								                             'lxml').find_all('table', class_='generaltable')[0]
-								tds = tarefa_table.find_all('td')
-								j = 0
-								tarefa_ik = ''
-								for td in tds:
-									tarefa_iv = td.text
-									j += 1
-									if j == 10: break
-									if tarefa_ik == '':
-										tarefa_ik = tarefa_iv.rstrip()
-									else:
-										topics[sub_topic][tarefa_ik] = tarefa_iv
-										tarefa_ik = ''
-					refined[k][topic_name] = topics
-					i += 1
-		return refined
+				if title not in materias and re.search(r'\s\d{4}/\d+$', title) is not None:
+					materia = Materia(a['title'],a['href'])
+					materias.append(materia)
+		for materia in materias:
+			bs = BeautifulSoup(self.session.get(materia.link).text, 'lxml')
+			i = 1
+			while True:
+				sec = bs.find(id='section-' + str(i))
+				if sec is None: break
+				as_ = BeautifulSoup(str(sec), 'lxml').find_all('a', href=True)
+				topic_name = sec.get('aria-label')
+				if not topic_name: continue
+				materia.topicos.append(Topico(topic_name))
+				for a in as_:
+					if a.get('onclick') is not None:
+						sub_topic_name, sub_topic_type = ' '.join(a.text.split()[:-1]), ''.join(a.text.split()[-1:])
+						if sub_topic_name is None: continue
+						sub_topic_link = a['href']
+						t = materia.topicos[-1]
+						if not any(st.name for st in t.subtopicos):
+							t.subtopicos.append(Subtopico(sub_topic_name, sub_topic_link, sub_topic_type))
+						if sub_topic_type == 'Tarefa':
+							tarefa_table = BeautifulSoup(self.session.get(sub_topic_link).text,
+							                             'lxml').find_all('table', class_='generaltable')[0]
+							tds = tarefa_table.find_all('td')
+							j = 0
+							tarefa_ik = None
+							for td in tds:
+								tarefa_attrib = td.text
+								j += 1
+								if j == 10: break # why?? comment more often please
+								if not tarefa_ik: tarefa_ik = tarefa_attrib.rstrip()
+								else:
+									t.subtopicos[-1].tarefas.update({tarefa_ik:tarefa_attrib})
+									tarefa_ik = None
+				i += 1
+		return materias
 
 	# ----------------------------------------------------
 	#                       TIA
@@ -237,8 +244,8 @@ def process_args(args):
 	return argskv
 
 
-def main(args):
-	argskv = process_args(args)
+def main(argv):
+	argskv = process_args(argv)
 	mack = Mackenzie()
 	if 'h' in argskv:
 		print(mack._usage)
