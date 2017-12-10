@@ -6,10 +6,8 @@ class Materia:
 		self.topicos = []
 
 	def __str__(self):
-		print('-'*20)
-		print(self.name)
-		print(self.link)
-		for t in self.topicos: print(t)
+		return '-' * 20+self.name + self.link + '\n'.join(self.topicos)
+
 
 class Topico:
 	def __init__(self, name):
@@ -18,22 +16,19 @@ class Topico:
 		self.subtopicos = []
 
 	def __str__(self):
-		print('-'*15)
-		print(self.name)
-		print(self.subtopicos)
+		return '-' * 15 + self.name + '\n'.join(self.subtopicos)
+
 
 class Subtopico:
 	def __init__(self, name, link, type):
 		if not name or not link or not type: raise Exception('NO NAME OR NO LINK OR NO TYPE')
 		self.name = name
 		self.link = link
-		self.tarefas = {} # order by date?
+		self.tarefas = {}  # order by date?
 
 	def __str__(self):
-		print('-'*10)
-		print(self.name)
-		print(self.link)
-		print(self.tarefas)
+		return '-' * 10 + self.name + self.link + '\n'.join(self.tarefas)
+
 
 class Tarefa:
 	def __init__(self, name, link, type):
@@ -43,6 +38,4 @@ class Tarefa:
 		self.type = type
 
 	def __str__(self):
-		print(self.name)
-		print(self.link)
-		print(self.type)
+		return self.name + self.link + self.type

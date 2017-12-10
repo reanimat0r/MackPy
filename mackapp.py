@@ -91,7 +91,7 @@ class Mackenzie():
 	def dump_config_file(self):
 		pickle.dump(self.config, open(self.config_file, 'wb'))
 
-	def save(self): pickle.dump(self.materias, self.config['materias_filepath'])
+	def save(self): pickle.dump(self.materias, open(self.config['materias_filepath'], 'wb'))
 
 	def recall(self):
 		try:
@@ -118,10 +118,10 @@ class Mackenzie():
 
 	def get_materias(self):
 		if not self.logged_in and not self.logging_in: raise Exception('Not logged in')
-		self.materias = self._extract_materias(self.session.get(self._moodle_home).text)
+		self.materias = self._fetch_materias(self.session.get(self._moodle_home).text)
 		return self.materias
 
-	def _extract_materias(self, html):
+	def _fetch_materias(self, html):
 		materias = []
 		bs = BeautifulSoup(html, 'lxml')
 		save(html)
