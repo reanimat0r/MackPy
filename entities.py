@@ -5,6 +5,10 @@ from collections import OrderedDict
 def hash(o): # builtin hash function uses id function which depends on memory location which depends on ToE
 	return sha1(o.encode('utf-8')).hexdigest()
 
+class Aluno:
+	def __init__(self, tia, senha):
+		self.tia = tia
+		self.senha = senha
 
 class Materia:
 	def __init__(self, name, link):

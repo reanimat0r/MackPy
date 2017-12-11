@@ -1,6 +1,5 @@
 import atexit
 import getpass
-import json
 import os
 import pickle
 import signal
@@ -11,38 +10,14 @@ import requests
 from bs4 import BeautifulSoup
 from lxml import html
 
+from entities import Materia, Topico, Subtopico, Tarefa
+from util import *
+from requesthandler import *
 
 # ----------------------------------------------------
 #                       SETUP
 # ----------------------------------------------------
-from entities import Materia, Topico, Subtopico, Tarefa
-
-
-def signal_handler(signal, frame):
-	sys.exit(0)
-
-
-signal.signal(signal.SIGINT, signal_handler)
-
-
-# ----------------------------------------------------
-#                       UTIL
-# ----------------------------------------------------
-def jsonify(o):
-	try: return json.dumps(o, indent=4)
-	except: [json.dumps(i, indent=4) for i in o]
-
-
-def parse_datetime_moodle(datetime):
-	return datetime.strptime('-'.join(
-		datetime.replace('Fev', 'Feb').replace('Abr', 'Apr').replace('Mai', 'May').replace('Ago', 'Aug').replace('Set',
-		                                                                                                         'Sep').replace(
-			'Out', 'Oct').replace('Dez', 'Dec').split()[1:]), '%d-%b-%Y,-%H:%M')
-
-
-def save(html):
-	with open('D:\\Google Drive\\Programming\\Python\\MackApp 3.0\\page.html', 'wb') as f:
-		f.write(bytes(html, 'utf-8'))
+signal.signal(signal.SIGINT | signal.SIGKILL, exit_gracefully)  # does OR gating work in this scenario?
 
 class Mackenzie():
 	def __init__(self, recall=False, cross_plat_config_file='~/mack.ini', cookie_file='cookies'):
@@ -51,12 +26,9 @@ class Mackenzie():
 		try:
 			self.config = pickle.load(open(self.config_file, 'rb'))
 		except:
-			self.config = {'materias_filepath':'materias.mack'}
+			self.config = {'materias_filepath': 'materias.mack'}
 		if recall: self.recall()
-		try:
-			self.materias = pickle.load(open(self.config['materias_filepath'],'rb'))
-			self.new_materias = None
-		except: print('COULD NOT LOAD MATERIAS')
+		self.new_materias = None
 		self._moodle_home = 'http://moodle.mackenzie.br/moodle/'
 		self._moodle_login = self._moodle_home + 'login/index.php?authldap_skipntlmsso=1'
 		self._tia_home = 'https://www3.mackenzie.br/tia/'
@@ -67,6 +39,7 @@ class Mackenzie():
 		self._tia_notas = self._tia_home + 'notasChamada.php'
 		self.session = requests.session()
 		self.logged_in = False
+		self.logging_in = False
 		try:
 			self.session.cookies = pickle.load(open(self.cookie_file, 'rb'))
 		except:
@@ -89,6 +62,11 @@ class Mackenzie():
 
 				target pode ser notas, horarios, tarefas no momento
 			'''
+		self._server_usage = '''Mack App\n\nUsage: python3 mackapp.py -b [bot_id_info]\n
+						Options:
+							-h 		isto
+							-i		modo interativo
+					'''
 
 	def dump_cookie_file(self):
 		pickle.dump(self.session.cookies, open(self.cookie_file, 'wb'))
@@ -96,11 +74,12 @@ class Mackenzie():
 	def dump_config_file(self):
 		pickle.dump(self.config, open(self.config_file, 'wb'))
 
-	def save(self): pickle.dump(self.materias, open(self.config['materias_filepath'], 'wb'))
+	def save(self):
+		pickle.dump(self.materias, open(self.config['materias_filepath'], 'wb'))
 
 	def recall(self):
 		try:
-			self.materias = pickle.load(open(self.config['materias_filepath'],'rb'))
+			self.materias = pickle.load(open(self.config['materias_filepath'], 'rb'))
 			return True
 		except:
 			self.materias = None
@@ -122,25 +101,26 @@ class Mackenzie():
 		return self.logged_in
 
 	def _diff(self, m, nm):
-		pass#the joint
+		pass  # the joint
 
 	def get_materias(self, fetch=False, diff=False, v=0):
-		if not self.logged_in and not self.logging_in: raise Exception('Not logged in')
+		# if not self.logged_in and not self.logging_in: raise Exception('Not logged in')
 		if fetch:
-			self.materias = self._fetch_materias(self.session.get(self._moodle_home).text,v=v) # apply Diff
-		if diff: return self.materias, self._diff(self.materias, self.new_materias)
-		else: return self.materias
+			self.materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)  # apply Diff
+		if diff:
+			return self.materias, self._diff(self.materias, self.new_materias)
+		else:
+			return self.materias
 
 	def _fetch_materias(self, html, v=0):
 		materias = []
 		bs = BeautifulSoup(html, 'lxml')
-		save(html)
 		as_ = bs.find_all('a', href=True)
 		for a in as_:
 			if 'course' in a['href'] and a.get('title') is not None:
 				title = a.get('title')
 				if title not in materias and re.search(r'\s\d{4}/\d+$', title) is not None:
-					materia = Materia(a['title'],a['href'])
+					materia = Materia(a['title'], a['href'])
 					if not any(materia.name in m.name for m in materias):
 						materias.append(materia)
 		if v >= 1:
@@ -156,7 +136,7 @@ class Mackenzie():
 				as_ = BeautifulSoup(str(sec), 'lxml').find_all('a', href=True)
 				topic_name = sec.get('aria-label')
 				if not topic_name:
-					no_topic_name_count-=1
+					no_topic_name_count -= 1
 					if not no_topic_name_count: break
 					continue
 				materia.topicos.append(Topico(topic_name))
@@ -178,10 +158,11 @@ class Mackenzie():
 							for td in tds:
 								tarefa_attrib = td.text
 								j += 1
-								if j == 10: break # exceeded useful table rows
-								if not tarefa_ik: tarefa_ik = tarefa_attrib.rstrip()
+								if j == 10: break  # exceeded useful table rows
+								if not tarefa_ik:
+									tarefa_ik = tarefa_attrib.rstrip()
 								else:
-									tarefa.info.update({tarefa_ik:tarefa_attrib})
+									tarefa.info.update({tarefa_ik: tarefa_attrib})
 									tarefa_ik = None
 							if tarefa: t.subtopicos[-1].tarefas.append(tarefa)
 				i += 1
@@ -265,15 +246,15 @@ def process_args(args):
 
 
 def test_materias():
-	mack = Mackenzie()
-	mack.login_moodle(v=True)
+	mack = Mackenzie(recall=True)
+	# mack.login_moodle(v=True)
 	materias = mack.get_materias(fetch=True)
 	for m in materias:
-		print(m.hash())#, str(m))
+		print(m.hash())  # , str(m))
 	sys.exit(0)
 
-def main(argv):
-	test_materias()
+
+def self_use(argv):
 	argskv = process_args(argv)
 	mack = Mackenzie()
 	if 'h' in argskv:
@@ -284,11 +265,12 @@ def main(argv):
 	logged_in_tia = False
 	logged_in_moodle = False
 	command_seq = list(filter(lambda k: not k.startswith('-'), argskv.keys()))
-	if not command_seq and not i: i = True # if theres no command, force interactive
-	m,n=None,None
-	while not m or not p: # TODO: have argskv override mack.config
+	if not command_seq and not i: i = True  # if theres no command, force interactive
+	m, n = None, None
+	while not m or not p:  # TODO: have argskv override mack.config
 		m = argskv['m'] if 'm' in argskv else mack.config['user'] if 'user' in mack.config else input('Matricula: ')
-		p = argskv['p'] if 'p' in argskv else mack.config['password'] if 'password' in mack.config else getpass.getpass('Senha: ')
+		p = argskv['p'] if 'p' in argskv else mack.config['password'] if 'password' in mack.config else getpass.getpass(
+			'Senha: ')
 	while True:
 		if i:
 			try:
@@ -314,6 +296,23 @@ def main(argv):
 		print(jsonify(out))
 		if not i: break
 
+
+def server_use(argv):
+	argkv = process_args(argv)
+	mack = Mackenzie(recall=True)
+	if 'h' in argkv:
+		print(mack._server_usage)
+		return
+	bot = RequestHandler(mack)
+	bot.start()
+	bot.join()
+
+
+def main(argv):
+	server_use(argv)
+
+
+# test_materias()
 
 if __name__ == '__main__':
 	main(sys.argv)
