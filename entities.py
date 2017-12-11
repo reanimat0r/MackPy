@@ -12,7 +12,7 @@ class Materia:
 		return [t.all_tarefas() for t in self.topicos]
 
 	def __str__(self):
-		return '-' * 30 + '\n' + self.name + '\n' + self.link + '\n\t'.join([str(t) for t in self.topicos]) + '-' * 30
+		return '\n\t' + self.name + '\n\t' + self.link + '\n\t'.join([str(t) for t in self.topicos]) + '\n'
 
 
 class Topico:
@@ -25,7 +25,7 @@ class Topico:
 		return [st.tarefas for st in self.subtopicos]
 
 	def __str__(self):
-		return '-' * 20 + '\n' + self.name + '\n\t'.join([str(st) for st in self.subtopicos]) + '-' * 20
+		return '\n\t' + self.name + '\n\t\t'.join([str(st) for st in self.subtopicos]) + '\n'
 
 
 class Subtopico:
@@ -33,11 +33,14 @@ class Subtopico:
 		if not name or not link or not type: raise Exception('NO NAME OR NO LINK OR NO TYPE')
 		self.name = name
 		self.link = link
+		self.type = type
 		self.tarefas = []  # order by date?
 
 	def __str__(self):
-		return '-' * 10 + '\n' + self.name + '\n' + self.link + '\n\t'.join(
-			[str(trf) for trf in self.tarefas]) + '-' * 10
+		return '\n\t\t' + self.name +\
+		       '\n\t\t' + self.link +\
+		       '\n\t\t' + self.type +\
+		       '\n\t\t\t'.join([str(trf) for trf in self.tarefas]) + '\n\t\t'
 
 
 class Tarefa:

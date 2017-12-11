@@ -28,8 +28,9 @@ signal.signal(signal.SIGINT, signal_handler)
 # ----------------------------------------------------
 #                       UTIL
 # ----------------------------------------------------
-def pretty_dict(le_dict):
-	return json.dumps(le_dict, indent=4)
+def jsonify(o):
+	try: return json.dumps(o, indent=4)
+	except: [json.dumps(i, indent=4) for i in o]
 
 
 def parse_datetime_moodle(datetime):
@@ -52,7 +53,9 @@ class Mackenzie():
 		except:
 			self.config = {'materias_filepath':'materias.mack'}
 		if recall: self.recall()
-		try: self.materias = pickle.load(open(self.config['materias_filepath'],'rb'))
+		try:
+			self.materias = pickle.load(open(self.config['materias_filepath'],'rb'))
+			self.new_materias = None
 		except: print('COULD NOT LOAD MATERIAS')
 		self._moodle_home = 'http://moodle.mackenzie.br/moodle/'
 		self._moodle_login = self._moodle_home + 'login/index.php?authldap_skipntlmsso=1'
@@ -119,15 +122,16 @@ class Mackenzie():
 		return self.logged_in
 
 	def _diff(self, m, nm):
-		pass # THE JOINT
+		pass#the joint
 
-	def get_materias(self):
+	def get_materias(self, fetch=False, diff=False, v=0):
 		if not self.logged_in and not self.logging_in: raise Exception('Not logged in')
-		self.new_materias = self._fetch_materias(self.session.get(self._moodle_home).text) # apply Diff
-		self._diff(self.materias, self.new_materias)
-		return self.materias
+		if fetch:
+			self.materias = self._fetch_materias(self.session.get(self._moodle_home).text,v=v) # apply Diff
+		if diff: return self.materias, self._diff(self.materias, self.new_materias)
+		else: return self.materias
 
-	def _fetch_materias(self, html):
+	def _fetch_materias(self, html, v=0):
 		materias = []
 		bs = BeautifulSoup(html, 'lxml')
 		save(html)
@@ -139,6 +143,8 @@ class Mackenzie():
 					materia = Materia(a['title'],a['href'])
 					if not any(materia.name in m.name for m in materias):
 						materias.append(materia)
+		print('Fetching..:')
+		for m in materias: print(str(m.name))
 		for materia in materias:
 			bs = BeautifulSoup(self.session.get(materia.link).text, 'lxml')
 			i = 1
@@ -257,7 +263,15 @@ def process_args(args):
 	return argskv
 
 
+def test_materias():
+	mack = Mackenzie()
+	mack.login_moodle(v=True)
+	materias = mack.get_materias(fetch=True)
+	for m in materias: print(m)
+	sys.exit(0)
+
 def main(argv):
+	test_materias()
 	argskv = process_args(argv)
 	mack = Mackenzie()
 	if 'h' in argskv:
@@ -270,7 +284,7 @@ def main(argv):
 	command_seq = list(filter(lambda k: not k.startswith('-'), argskv.keys()))
 	if not command_seq and not i: i = True # if theres no command, force interactive
 	m,n=None,None
-	while not m or not p:
+	while not m or not p: # TODO: have argskv override mack.config
 		m = argskv['m'] if 'm' in argskv else mack.config['user'] if 'user' in mack.config else input('Matricula: ')
 		p = argskv['p'] if 'p' in argskv else mack.config['password'] if 'password' in mack.config else getpass.getpass('Senha: ')
 	while True:
@@ -295,7 +309,7 @@ def main(argv):
 		elif o == 'horarios':
 			if not logged_in_tia: logged_in_tia = mack.login_tia(m, p, v)
 			out = mack.get_horarios()
-		print(pretty_dict(out))
+		print(jsonify(out))
 		if not i: break
 
 
