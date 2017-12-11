@@ -143,8 +143,9 @@ class Mackenzie():
 					materia = Materia(a['title'],a['href'])
 					if not any(materia.name in m.name for m in materias):
 						materias.append(materia)
-		print('Fetching..:')
-		for m in materias: print(str(m.name))
+		if v >= 1:
+			print('Fetching..:')
+			for m in materias: print(m.hash(), str(m))
 		for materia in materias:
 			bs = BeautifulSoup(self.session.get(materia.link).text, 'lxml')
 			i = 1
@@ -267,7 +268,8 @@ def test_materias():
 	mack = Mackenzie()
 	mack.login_moodle(v=True)
 	materias = mack.get_materias(fetch=True)
-	for m in materias: print(m)
+	for m in materias:
+		print(m.hash())#, str(m))
 	sys.exit(0)
 
 def main(argv):
