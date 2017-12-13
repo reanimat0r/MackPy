@@ -60,9 +60,9 @@ class MackenzieGUI():
 
 	def _UI_update_materias(self):
 		persist = 3
-		while len(self.mack.config) < 2 or not self.mack.config['user'] or not self.mack.config['password'] and persist:
-			self.mack.config['user'] = simpledialog.askstring('Authentication', 'TIA:')
-			self.mack.config['password'] = simpledialog.askstring('Authentication', 'Password:', show='*')
+		while len(self.mack.userdata) < 2 or not self.mack.userdata['user'] or not self.mack.userdata['password'] and persist:
+			self.mack.userdata['user'] = simpledialog.askstring('Authentication', 'TIA:')
+			self.mack.userdata['password'] = simpledialog.askstring('Authentication', 'Password:', show='*')
 			persist-=1
 		self.indicator_label.config(text='Logging in')
 		self.mack.login_moodle(v=True)

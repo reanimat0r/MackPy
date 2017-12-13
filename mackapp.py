@@ -20,15 +20,13 @@ from requesthandler import *
 signal.signal(signal.SIGINT | signal.SIGKILL, exit_gracefully)  # does OR gating work in this scenario?
 
 class Mackenzie():
-	def __init__(self, recall=False, cross_plat_config_file='~/mack.ini', cookie_file='cookies'):
+	def __init__(self, recall=False, cross_plat_config_file='~/userdata.mack'):
 		self.config_file = os.path.expanduser(cross_plat_config_file)
-		self.cookie_file = cookie_file
 		try:
-			self.config = pickle.load(open(self.config_file, 'rb'))
+			self.userdata = pickle.load(open(self.config_file, 'rb'))
 		except:
-			self.config = {'materias_filepath': 'materias.mack'}
+			self.userdata = {} # tia:materias,chat_id:materias / "In Python, dictionaries really store pointers to objects. That means that having two keys point to the same object will not create the object twice."
 		if recall: self.recall()
-		self.new_materias = None
 		self._moodle_home = 'http://moodle.mackenzie.br/moodle/'
 		self._moodle_login = self._moodle_home + 'login/index.php?authldap_skipntlmsso=1'
 		self._tia_home = 'https://www3.mackenzie.br/tia/'
@@ -42,12 +40,7 @@ class Mackenzie():
 		self.logged_in_moodle = False
 		self.logging_in_moodle = False
 		self.logging_in_tia = False
-		try:
-			self.session.cookies = pickle.load(open(self.cookie_file, 'rb'))
-		except:
-			pass
-		atexit.register(self.dump_cookie_file)
-		atexit.register(self.dump_config_file)
+		atexit.register(self.save_userdata)
 		atexit.register(self.save)
 		self._usage = '''Mack App\n\nUsage: python3 mackapp.py [-g] [-m tia] [-p senha] [-i] [-h] [-v] targets\n
 				Options:
@@ -70,18 +63,15 @@ class Mackenzie():
 							-i		modo interativo
 					'''
 
-	def dump_cookie_file(self):
-		pickle.dump(self.session.cookies, open(self.cookie_file, 'wb'))
-
-	def dump_config_file(self):
-		pickle.dump(self.config, open(self.config_file, 'wb'))
+	def save_userdata(self):
+		pickle.dump(self.userdata, open(self.config_file, 'wb'))
 
 	def save(self):
-		pickle.dump(self.materias, open(self.config['materias_filepath'], 'wb'))
+		pickle.dump(self.materias, open(self.userdata['materias_filepath'], 'wb'))
 
 	def recall(self):
 		try:
-			self.materias = pickle.load(open(self.config['materias_filepath'], 'rb'))
+			self.materias = pickle.load(open(self.userdata['materias_filepath'], 'rb'))
 			return True
 		except:
 			self.materias = None
@@ -93,31 +83,33 @@ class Mackenzie():
 	def login_moodle(self, v=False):
 		self.logging_in_moodle = True
 		res = self.session.get(self._moodle_home)
-		data = {'username': self.config['user'], 'password': self.config['password']}
-		cookies = dict(res.cookies)
+		data = {'username': self.userdata['user'], 'password': self.userdata['password']}
 		headers = dict(referer=self._tia_index)
-		res = self.session.post(self._moodle_login, data=data, cookies=cookies, headers=headers, allow_redirects=True)
+		res = self.session.post(self._moodle_login, data=data, headers=headers, allow_redirects=True)
 		self.logged_in_moodle = 'Minhas Disciplinas/Cursos' in res.text
 		self.logging_in_moodle = False
 		if v: print('Logged in.' if self.logged_in_moodle else 'Could not log in.')
 		return self.logged_in_moodle
 
 	def _diff(self, m, nm):
-		return None  # the joint
+		return None
 
-	def get_materias(self, fetch=False, diff=False, v=0):
+	def get_materias(self, tia, fetch=False, diff=False, v=0):
 		if not self.logged_in_moodle and not self.logging_in_moodle: raise Exception('Not logged in Moodle')
 		while self.logging_in_moodle: pass # wait to finish login
-		if fetch: self.materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)  # apply Diff
-		if diff: return self.materias, self._diff(self.materias, self.new_materias)
+		if fetch:
+			new_materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)  # apply Diff
+			if diff: return self.materias, self._diff(self.materias, new_materias)
+			else: self.materias = new_materias
+			return self.materias
 		else: return self.materias
 
-	def get_tarefas(self):
+	def get_tarefas(self, fetch=False):
+		if fetch: self.get_materias(fetch=fetch)
 		tarefas = []
 		for m in self.materias:
 			tarefas.extend(m.all_tarefas())
-		sorted(tarefas, lambda t: t.info['Data de entrega'])
-		return tarefas
+		return sorted(tarefas, key=lambda t: t.due_date)
 
 	def _fetch_materias(self, html, v=0):
 		materias = []
@@ -188,9 +180,8 @@ class Mackenzie():
 		res = self.session.get(self._tia_index)
 		token = list(set(html.fromstring(res.text).xpath("//input[@name='token']/@value")))[0]
 		data = {'alumat': user, 'pass': pwd, 'token': token, 'unidade': '001'}
-		cookies = dict(res.cookies)
 		headers = dict(referer=self._tia_index)
-		self.session.post(self._tia_verifica, data=data, cookies=cookies, headers=headers, allow_redirects=True)
+		self.session.post(self._tia_verifica, data=data, headers=headers, allow_redirects=True)
 		res = self.session.get(self._tia_index2).text
 		self.logged_in_tia = user in res
 		if v: print('Entrou no TIA')
@@ -265,12 +256,9 @@ def process_args(args):
 def test_materias():
 	mack = Mackenzie(recall=True)
 	mack.login_moodle(v=True)
-	materias = mack.get_materias(fetch=True)
-	for m in materias:
-		tarefas = m.all_tarefas()
-		for t in tarefas:
-			print(t)
-		print('\n'*3)
+	tarefas = mack.get_tarefas(fetch=True)
+	for t in tarefas:
+		print(t)
 	sys.exit(0)
 
 
@@ -288,8 +276,8 @@ def self_use(argv):
 	if not command_seq and not i: i = True  # if theres no command, force interactive
 	m, n = None, None
 	while not m or not p:  # TODO: have argskv override mack.config
-		m = argskv['m'] if 'm' in argskv else mack.config['user'] if 'user' in mack.config else input('Matricula: ')
-		p = argskv['p'] if 'p' in argskv else mack.config['password'] if 'password' in mack.config else getpass.getpass(
+		m = argskv['m'] if 'm' in argskv else mack.userdata['user'] if 'user' in mack.userdata else input('Matricula: ')
+		p = argskv['p'] if 'p' in argskv else mack.userdata['password'] if 'password' in mack.userdata else getpass.getpass(
 			'Senha: ')
 	while True:
 		if i:
