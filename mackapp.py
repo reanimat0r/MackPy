@@ -116,6 +116,7 @@ class Mackenzie():
 		tarefas = []
 		for m in self.materias:
 			tarefas.extend(m.all_tarefas())
+		sorted(tarefas, lambda t: t.info['Data de entrega'])
 		return tarefas
 
 	def _fetch_materias(self, html, v=0):
@@ -170,9 +171,12 @@ class Mackenzie():
 								if not tarefa_ik:
 									tarefa_ik = tarefa_attrib.rstrip()
 								else:
+									# if tarefa_ik == 'Data de entrega': tarefa_attrib = parse_datetime_moodle(tarefa_attrib)
 									tarefa.info.update({tarefa_ik: tarefa_attrib})
 									tarefa_ik = None
-							if tarefa: t.subtopicos[-1].tarefas.append(tarefa)
+							if tarefa:
+								tarefa.due_date = parse_datetime_moodle(tarefa.info['Data de entrega'])
+								t.subtopicos[-1].tarefas.append(tarefa)
 				i += 1
 		return materias
 
@@ -265,7 +269,8 @@ def test_materias():
 	for m in materias:
 		tarefas = m.all_tarefas()
 		for t in tarefas:
-			print(str(t))
+			print(t)
+		print('\n'*3)
 	sys.exit(0)
 
 
@@ -323,9 +328,9 @@ def server_use(argv):
 	bot.start()
 	bot.join()
 
-
 def main(argv):
-	server_use(argv)
+	test_materias()
+	# server_use(argv)
 
 if __name__ == '__main__':
 	main(sys.argv)

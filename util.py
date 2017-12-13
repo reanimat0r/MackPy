@@ -1,3 +1,7 @@
+import time
+from time import mktime
+import datetime
+import time
 import sys
 import json
 def exit_gracefully(signal, frame):
@@ -7,11 +11,16 @@ def save_page(html):
 	with open('page.html', 'wb') as f:
 		f.write(bytes(html, 'utf-8'))
 
-def parse_datetime_moodle(datetime):
-	return datetime.strptime('-'.join(
-		datetime.replace('Fev', 'Feb').replace('Abr', 'Apr').replace('Mai', 'May').replace('Ago', 'Aug').replace('Set',
-		                                                                                                         'Sep').replace(
-			'Out', 'Oct').replace('Dez', 'Dec').split()[1:]), '%d-%b-%Y,-%H:%M')
+def parse_datetime_moodle(horario):
+	return datetime.datetime.fromtimestamp(mktime(time.strptime('-'.join(
+		horario.replace('Fev', 'Feb').\
+			replace('Abr', 'Apr').\
+			replace('Mai', 'May').\
+			replace('Ago', 'Aug').\
+			replace('Set','Sep').\
+			replace('Out', 'Oct').\
+			replace('Dez', 'Dec').\
+			split()[1:]), '%d-%b-%Y,-%H:%M')))
 def jsonify(o):
 	try: return json.dumps(o, indent=4)
 	except: [json.dumps(i, indent=4) for i in o]
@@ -25,3 +34,12 @@ def split_string(n, st):
 		else:
 			lst += [i]
 	return lst
+
+def make_help(commands):
+	split = commands.split('\n')
+	help = {}
+	for c in split:
+		if c and c.strip():
+			c,desc = c.split(' - ')
+			help.update({'/'+c:desc})
+	return help

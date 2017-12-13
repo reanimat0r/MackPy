@@ -1,3 +1,4 @@
+from util import *
 import json
 from hashlib import sha1 # deprecated but fukkit dans fast
 from collections import OrderedDict
@@ -20,8 +21,10 @@ class Materia:
 	def all_tarefas(self):
 		all_tarefas = []
 		for t in self.topicos:
-			all_tarefas.extend(t.all_tarefas())
-		return all_tarefas
+			all_tarefas.extend(t.all_tarefas()[:])
+		for t in all_tarefas:
+			t.due_date = parse_datetime_moodle(t.info['Data de entrega'])
+		return sorted(all_tarefas,key=lambda t: t.due_date)
 
 	def hash(self):
 		hashes = ''
@@ -86,6 +89,7 @@ class Subtopico:
 class Tarefa:
 	def __init__(self, tarefa_name, tarefa_desc):
 		self.info = {'Título':tarefa_name, 'Descrição':tarefa_desc} # reconsiderar esta merda toda
+		self.due_date = None
 
 	def __len__(self):
 		return len(self.info)
