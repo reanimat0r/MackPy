@@ -18,7 +18,22 @@ class RequestHandler(threading.Thread):
 		self.bot = telepot.Bot(os.environ['MACK_BOT_TOKEN'])
 		self.pending = ''  # awaited response
 		# self.help = '\n'.join(['/start', '/fetch', '/materias'])
-		self.help = {'/start':'Processo de autenticação', '/fetch':'Descobrir novas postagens', '/materias':'Todas as matérias encontradas'}
+		self._commands = '''
+start - Processo de autenticação
+fetch - Descobrir novas postagens
+materias - Todas as matérias encontradas
+tarefas - Todas as tarefas
+		'''
+		self.help = self.make_help()
+
+	def make_help(self):
+		split = self._commands.split('\n')
+		help = {}
+		for c in split:
+			if c and c.strip():
+				c,desc = c.split(' - ')
+				help.update({'/'+c:desc})
+		return help
 
 	def safe_send(self, chat_id,
 	              message):  # this mitigates telepot.exception.TelegramError: 'Bad Request: message is too long'
@@ -76,3 +91,7 @@ class RequestHandler(threading.Thread):
 			unimsg = 'Unrecognized command: ' + text
 			print(unimsg)
 			self.safe_send(chat_id, unimsg)
+
+if __name__  == '__main__':
+	rh = RequestHandler(None)
+	print(rh.help)
