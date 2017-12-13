@@ -12,13 +12,16 @@ class Aluno:
 
 class Materia:
 	def __init__(self, name, link):
-		if not name or not link: raise Exception('NO NAME OR NO LINK')
+		if not name or not link: raise Exception('NO MATERIA NAME OR NO LINK')
 		self.name = name
 		self.link = link
 		self.topicos = []
 
 	def all_tarefas(self):
-		return [t.all_tarefas() for t in self.topicos]
+		all_tarefas = []
+		for t in self.topicos:
+			all_tarefas.extend(t.all_tarefas())
+		return all_tarefas
 
 	def hash(self):
 		hashes = ''
@@ -35,12 +38,15 @@ class Materia:
 
 class Topico:
 	def __init__(self, name):
-		if not name: raise Exception('NO NAME')
+		if not name: raise Exception('NO TOPICO NAME')
 		self.name = name
 		self.subtopicos = []
 
 	def all_tarefas(self):
-		return [st.tarefas for st in self.subtopicos]
+		all_tarefas = []
+		for st in self.subtopicos:
+			all_tarefas.extend(st.tarefas)
+		return all_tarefas
 
 	def hash(self):
 		hashes = ''
@@ -78,8 +84,8 @@ class Subtopico:
 
 
 class Tarefa:
-	def __init__(self):
-		self.info = {}
+	def __init__(self, tarefa_name, tarefa_desc):
+		self.info = {'Título':tarefa_name, 'Descrição':tarefa_desc} # reconsiderar esta merda toda
 
 	def __len__(self):
 		return len(self.info)
@@ -91,7 +97,6 @@ class Tarefa:
 			hashes+= hash(k)
 			hashes+= hash(v)
 		return hash(hashes)
-
 
 	def __str__(self):
 		return json.dumps(self.info, ensure_ascii=False, indent=4)

@@ -38,8 +38,10 @@ class Mackenzie():
 		self._tia_horarios = self._tia_home + 'horarChamada.php'
 		self._tia_notas = self._tia_home + 'notasChamada.php'
 		self.session = requests.session()
-		self.logged_in = False
-		self.logging_in = False
+		self.logged_in_tia = False
+		self.logged_in_moodle = False
+		self.logging_in_moodle = False
+		self.logging_in_tia = False
 		try:
 			self.session.cookies = pickle.load(open(self.cookie_file, 'rb'))
 		except:
@@ -89,28 +91,32 @@ class Mackenzie():
 	#                       MOODLE
 	# ----------------------------------------------------
 	def login_moodle(self, v=False):
-		self.logging_in = True
+		self.logging_in_moodle = True
 		res = self.session.get(self._moodle_home)
 		data = {'username': self.config['user'], 'password': self.config['password']}
 		cookies = dict(res.cookies)
 		headers = dict(referer=self._tia_index)
 		res = self.session.post(self._moodle_login, data=data, cookies=cookies, headers=headers, allow_redirects=True)
-		self.logged_in = 'Minhas Disciplinas/Cursos' in res.text
-		self.logging_in = False
-		if v: print('Logged in.' if self.logged_in else 'Could not log in.')
-		return self.logged_in
+		self.logged_in_moodle = 'Minhas Disciplinas/Cursos' in res.text
+		self.logging_in_moodle = False
+		if v: print('Logged in.' if self.logged_in_moodle else 'Could not log in.')
+		return self.logged_in_moodle
 
 	def _diff(self, m, nm):
-		pass  # the joint
+		return None  # the joint
 
 	def get_materias(self, fetch=False, diff=False, v=0):
-		# if not self.logged_in and not self.logging_in: raise Exception('Not logged in')
-		if fetch:
-			self.materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)  # apply Diff
-		if diff:
-			return self.materias, self._diff(self.materias, self.new_materias)
-		else:
-			return self.materias
+		if not self.logged_in_moodle and not self.logging_in_moodle: raise Exception('Not logged in Moodle')
+		while self.logging_in_moodle: pass # wait to finish login
+		if fetch: self.materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)  # apply Diff
+		if diff: return self.materias, self._diff(self.materias, self.new_materias)
+		else: return self.materias
+
+	def get_tarefas(self):
+		tarefas = []
+		for m in self.materias:
+			tarefas.extend(m.all_tarefas())
+		return tarefas
 
 	def _fetch_materias(self, html, v=0):
 		materias = []
@@ -149,11 +155,13 @@ class Mackenzie():
 						if not any(sub_topic_name == st.name for st in t.subtopicos):
 							t.subtopicos.append(Subtopico(sub_topic_name, sub_topic_link, sub_topic_type))
 						if sub_topic_type == 'Tarefa':
-							tarefa_table = BeautifulSoup(self.session.get(sub_topic_link).text,
-							                             'lxml').find_all('table', class_='generaltable')[0]
+							tarefa_page = BeautifulSoup(self.session.get(sub_topic_link).text, 'lxml')
+							tarefa_name = tarefa_page.find_all('h2')[0].text
+							tarefa_desc = tarefa_page.find_all('div', attrs={'id':'intro'})[0].text
+							tarefa_table = tarefa_page.find_all('table', class_='generaltable')[0]
 							tds = tarefa_table.find_all('td')
 							j = 0
-							tarefa = Tarefa()
+							tarefa = Tarefa(tarefa_name, tarefa_desc)
 							tarefa_ik = None
 							for td in tds:
 								tarefa_attrib = td.text
@@ -178,12 +186,15 @@ class Mackenzie():
 		data = {'alumat': user, 'pass': pwd, 'token': token, 'unidade': '001'}
 		cookies = dict(res.cookies)
 		headers = dict(referer=self._tia_index)
-		res = self.session.post(self._tia_verifica, data=data, cookies=cookies, headers=headers, allow_redirects=True)
-		logged_in = user in self.session.get(self._tia_index2).text
-		if v: print('' 'Entrou no TIA')
-		return logged_in
+		self.session.post(self._tia_verifica, data=data, cookies=cookies, headers=headers, allow_redirects=True)
+		res = self.session.get(self._tia_index2).text
+		self.logged_in_tia = user in res
+		if v: print('Entrou no TIA')
+		if 'manuten' in res: raise Exception('MANUTENCAO')
+		return self.logged_in_tia
 
-	def _extract_horarios(self, html):
+	def _extract_horarios(self, html): # TODO update self.materias instead
+		if not self.logged_in_tia: raise Exception('Not logged in Moodle')
 		refined = {}
 		dias = {0: 'Seg', 1: 'Ter', 2: 'Qua', 3: 'Qui', 4: 'Sex', 5: 'Sab'}
 		lists = pd.read_html(html)[1].values.tolist()
@@ -201,9 +212,10 @@ class Mackenzie():
 		return refined
 
 	def get_horarios(self):
+		if not self.logged_in_tia: raise Exception('Not logged in Moodle')
 		return self._extract_horarios(self.session.get(self._tia_horarios).text)
 
-	def _extract_notas(self, html):
+	def _extract_notas(self, html): # TODO same as above
 		refined = {}
 		cod_notas = {2: 'A', 3: 'B', 4: 'C', 5: 'D', 6: 'E', 7: 'F', 8: 'G', 9: 'H', 10: 'I', 11: 'J',
 		             12: 'NI1', 13: 'NI2', 14: 'SUB', 15: 'PARTIC', 16: 'MI', 17: 'PF', 18: 'MF'}
@@ -219,6 +231,7 @@ class Mackenzie():
 		return refined
 
 	def get_notas(self):
+		if not self.logged_in_tia: raise Exception('Not logged in Moodle')
 		return self._extract_notas(self.session.get(self._tia_notas).text)
 
 
@@ -247,10 +260,12 @@ def process_args(args):
 
 def test_materias():
 	mack = Mackenzie(recall=True)
-	# mack.login_moodle(v=True)
+	mack.login_moodle(v=True)
 	materias = mack.get_materias(fetch=True)
 	for m in materias:
-		print(m.hash())  # , str(m))
+		tarefas = m.all_tarefas()
+		for t in tarefas:
+			print(str(t))
 	sys.exit(0)
 
 
@@ -300,6 +315,7 @@ def self_use(argv):
 def server_use(argv):
 	argkv = process_args(argv)
 	mack = Mackenzie(recall=True)
+	mack.login_moodle(v=True)
 	if 'h' in argkv:
 		print(mack._server_usage)
 		return
@@ -310,9 +326,6 @@ def server_use(argv):
 
 def main(argv):
 	server_use(argv)
-
-
-# test_materias()
 
 if __name__ == '__main__':
 	main(sys.argv)

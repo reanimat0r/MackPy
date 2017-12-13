@@ -6,8 +6,9 @@ import threading
 
 
 class RequestHandler(threading.Thread):
-	def __init__(self, mack, users_file='users.mack'):
+	def __init__(self, mack, users_file='users.mack', verbose=True):
 		threading.Thread.__init__(self)
+		self.verbose = verbose
 		self._users_file = users_file
 		self.mack = mack
 		try:
@@ -16,7 +17,8 @@ class RequestHandler(threading.Thread):
 			self.users = {}
 		self.bot = telepot.Bot(os.environ['MACK_BOT_TOKEN'])
 		self.pending = ''  # awaited response
-		self.help = '\n'.join(['/start', '/fetch', '/materias'])
+		# self.help = '\n'.join(['/start', '/fetch', '/materias'])
+		self.help = {'/start':'Processo de autenticação', '/fetch':'Descobrir novas postagens', '/materias':'Todas as matérias encontradas'}
 
 	def safe_send(self, chat_id,
 	              message):  # this mitigates telepot.exception.TelegramError: 'Bad Request: message is too long'
@@ -51,14 +53,24 @@ class RequestHandler(threading.Thread):
 			self.pending = 'tia'
 		elif text == '/fetch':
 			self.safe_send(chat_id, 'Fetching matérias...')
-			materias = self.mack.get_materias(fetch=True)
-			response = '\n'.join(str(m) for m in materias)
-			self.safe_send(chat_id, response)
-		elif text == '/show': # tarefas, materias, horarios, notas
+			materias, diff = self.mack.get_materias(fetch=True, diff=True)
+			response = '\n'.join(m.name for m in materias)
+			# TODO insert details about update (diff)
+			if not response:
+				self.safe_send(chat_id, '/fetch failed.')
+			else:
+				self.safe_send(chat_id, response)
+		elif text.startswith('/show'):  # tarefas, materias, horarios, notas
+			try:
+				arg = text.split()[1]
+				if arg.strip().lower() == 'tarefas':
+					tarefas = self.mack.get_tarefas()
+					self.safe_send(chat_id, '\n'.join([str(t) for t in tarefas]))
+			except: self.safe_send(chat_id, self.help[text])
+
+		elif text.startswith('/remind'):  # tarefas, materias, horarios, notas
 			pass
-		elif text == '/remind': # tarefas, materias, horarios, notas
-			pass
-		elif text == '/esperar_por': # tarefas, materias, horarios, notas
+		elif text.startswith('/esperar_por'):  # tarefas, materias, horarios, notas
 			pass
 		else:
 			unimsg = 'Unrecognized command: ' + text

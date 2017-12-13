@@ -66,7 +66,7 @@ class MackenzieGUI():
 			persist-=1
 		self.indicator_label.config(text='Logging in')
 		self.mack.login_moodle(v=True)
-		if not self.mack.logged_in: self.indicator_label.config(text='Logging in failed')
+		if not self.mack.logged_in_tia: self.indicator_label.config(text='Logging in failed')
 		self.indicator_label.config(text='Retrieving materias')
 		self.materias = self.mack.get_materias()
 		# for m in self.materias: print(m)
