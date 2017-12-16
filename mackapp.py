@@ -20,13 +20,13 @@ from requesthandler import *
 signal.signal(signal.SIGINT | signal.SIGKILL, exit_gracefully)  # does OR gating work in this scenario?
 
 class Mackenzie():
-	def __init__(self, recall=False, cross_plat_config_file='~/userdata.mack'):
-		self.config_file = os.path.expanduser(cross_plat_config_file)
+	def __init__(self, userdata_file='~/userdata.mack'):
+		self.userdata_file = os.path.expanduser(userdata_file)
 		try:
-			self.userdata = pickle.load(open(self.config_file, 'rb'))
+			self.userdata = pickle.load(open(self.userdata_file, 'rb'))
 		except:
+			input('CANNOT LOAD USERDATA')
 			self.userdata = {} # tia:materias,chat_id:materias / "In Python, dictionaries really store pointers to objects. That means that having two keys point to the same object will not create the object twice."
-		if recall: self.recall()
 		self._moodle_home = 'http://moodle.mackenzie.br/moodle/'
 		self._moodle_login = self._moodle_home + 'login/index.php?authldap_skipntlmsso=1'
 		self._tia_home = 'https://www3.mackenzie.br/tia/'
@@ -36,12 +36,8 @@ class Mackenzie():
 		self._tia_horarios = self._tia_home + 'horarChamada.php'
 		self._tia_notas = self._tia_home + 'notasChamada.php'
 		self.session = requests.session()
-		self.logged_in_tia = False
-		self.logged_in_moodle = False
-		self.logging_in_moodle = False
-		self.logging_in_tia = False
+		self.busy = False
 		atexit.register(self.save_userdata)
-		atexit.register(self.save)
 		self._usage = '''Mack App\n\nUsage: python3 mackapp.py [-g] [-m tia] [-p senha] [-i] [-h] [-v] targets\n
 				Options:
 					-g      interface gráfica
@@ -64,14 +60,11 @@ class Mackenzie():
 					'''
 
 	def save_userdata(self):
-		pickle.dump(self.userdata, open(self.config_file, 'wb'))
-
-	def save(self):
-		pickle.dump(self.materias, open(self.userdata['materias_filepath'], 'wb'))
+		pickle.dump(self.userdata, open(self.userdata_file, 'wb'))
 
 	def recall(self):
 		try:
-			self.materias = pickle.load(open(self.userdata['materias_filepath'], 'rb'))
+			self.userdata = pickle.load(open(self.userdata, 'rb'))
 			return True
 		except:
 			self.materias = None
@@ -80,12 +73,9 @@ class Mackenzie():
 	# ----------------------------------------------------
 	#                       MOODLE
 	# ----------------------------------------------------
-	def login_moodle(self, v=False):
+	def login_moodle(self, tia, pwd, v=False):
 		self.logging_in_moodle = True
-		res = self.session.get(self._moodle_home)
-		data = {'username': self.userdata['user'], 'password': self.userdata['password']}
-		headers = dict(referer=self._tia_index)
-		res = self.session.post(self._moodle_login, data=data, headers=headers, allow_redirects=True)
+		res = self.session.post(self._moodle_login, data={'username': tia, 'password': pwd}, headers={'referer':self._tia_index}, allow_redirects=True)
 		self.logged_in_moodle = 'Minhas Disciplinas/Cursos' in res.text
 		self.logging_in_moodle = False
 		if v: print('Logged in.' if self.logged_in_moodle else 'Could not log in.')
@@ -254,7 +244,7 @@ def process_args(args):
 
 
 def test_materias():
-	mack = Mackenzie(recall=True)
+	mack = Mackenzie()
 	mack.login_moodle(v=True)
 	tarefas = mack.get_tarefas(fetch=True)
 	for t in tarefas:
@@ -307,8 +297,7 @@ def self_use(argv):
 
 def server_use(argv):
 	argkv = process_args(argv)
-	mack = Mackenzie(recall=True)
-	mack.login_moodle(v=True)
+	mack = Mackenzie()
 	if 'h' in argkv:
 		print(mack._server_usage)
 		return
