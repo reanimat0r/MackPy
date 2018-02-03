@@ -21,7 +21,7 @@ from requesthandler import *
 signal.signal(signal.SIGINT | signal.SIGKILL, exit_gracefully)  # does OR gating work in this scenario?
 DEFAULT_SQLITE_FILE = 'mack.sqlite'
 class Mackenzie():
-    def __init__(self, user, pwd):
+    def __init__(self, con, user, pwd):
 #                 self.userdata_file = os.path.expanduser(userdata_file)
 #                 try:
 #                         self.userdata = pickle.load(open(self.userdata_file, 'rb'))
@@ -37,6 +37,7 @@ class Mackenzie():
             self._tia_horarios = self._tia_home + 'horarChamada.php'
             self._tia_notas = self._tia_home + 'notasChamada.php'
             self.session = requests.session()
+            self.con = con;
             self.busy = False
             self.user = user
             self.pwd = pwd
@@ -66,100 +67,97 @@ class Mackenzie():
     #                       MOODLE
     # ----------------------------------------------------
     def login_moodle(self, v=True):
-            self.logging_in_moodle = True
-            #session_moodle = r1.cookies['MoodleSessionmoodle']
-            res = self.session.post(self._moodle_login, data={'username': self.user, 'password': self.pwd}, headers={}, allow_redirects=True)
-            print(self.session.cookies) 
-            res = self.session.get('https://moodle.mackenzie.br/moodle/login/index.php?testsession=25632')
-            print(self.session.cookies) 
-            res = self.session.get('https://moodle.mackenzie.br/moodle/')
-            print(self.session.cookies) 
-            self.login_status['moodle'] = 'Minhas Disciplinas/Cursos' in res.text
-            if v: print('Logged in.' if self.login_status['moodle'] else 'Could not log in.')
-            return self.login_status['moodle']
+        self.logging_in_moodle = True
+        #session_moodle = r1.cookies['MoodleSessionmoodle']
+        res = self.session.post(self._moodle_login, data={'username': self.user, 'password': self.pwd}, headers={}, allow_redirects=True)
+        print(self.session.cookies) 
+        res = self.session.get('https://moodle.mackenzie.br/moodle/login/index.php?testsession=25632')
+        print(self.session.cookies) 
+        res = self.session.get('https://moodle.mackenzie.br/moodle/')
+        print(self.session.cookies) 
+        self.login_status['moodle'] = 'Minhas Disciplinas/Cursos' in res.text
+        if v: print('Logged in.' if self.login_status['moodle'] else 'Could not log in.')
+        return self.login_status['moodle']
     # TODO
     def _diff(self, m, nm):
-            return None
+        return None
 
     def get_tarefas(self, fetch=False):
-            self.get_materias(fetch=fetch)
-            tarefas = []
-            for m in self.materias:
-                    tarefas.extend(m.all_tarefas())
-            return sorted(tarefas, key=lambda t: t.due_date)
+        self.get_materias(fetch=fetch)
+        tarefas = []
+        for m in self.materias:
+                tarefas.extend(m.all_tarefas())
+        return sorted(tarefas, key=lambda t: t.due_date)
+
+    def clone(self):
+        le_json = self.con.cursor().execute('SELECT json FROM materia WHERE tia=?', [self.user]).fetchone()
+        self.materias = json.loads(le_json)
 
     def get_materias(self, fetch=False, diff=False, v=True):
-            if not self.login_status['moodle']: self.login_moodle()
-#                 if not self.logged_in_moodle and not self.logging_in_moodle: raise Exception('Not logged in Moodle')
-#                 while self.logging_in_moodle: pass # wait to finish login
-            if fetch:
-                    new_materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)  # apply Diff
-                    if diff: return self.materias, self._diff(self.materias, new_materias)
-                    else: self.materias = new_materias
-                    return self.materias
-            else: return self.materias
+        if not self.login_status['moodle']: self.login_moodle()
+        if fetch: self.materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)
+        else: self.clone()
+        return self.materias
 
     def _fetch_materias(self, html, v=True):
-            materias = []
-            bs = BeautifulSoup(html, 'lxml')
-            as_ = bs.find_all('a', href=True)
-            for a in as_:
-                    if 'course' in a['href'] and a.get('title') is not None:
-                            title = a.get('title')
-                            if title not in materias and re.search(r'\s\d{4}/\d+$', title) is not None:
-                                    materia = Materia(a['title'], a['href'])
-                                    if not any(materia.name in m.name for m in materias):
-                                            materias.append(materia)
-            if v >= 1:
-                    print('Fetching..:')
-                    for m in materias: print(m.hash(), str(m))
-            [print(str(m)) for m in materias]
-            for materia in materias:
-                    bs = BeautifulSoup(self.session.get(materia.link).text, 'lxml')
-                    i = 1
-                    no_topic_name_count = 10
-                    while True:
-                            sec = bs.find(id='section-' + str(i))
-                            if sec is None: break
-                            as_ = BeautifulSoup(str(sec), 'lxml').find_all('a', href=True)
-                            topic_name = sec.get('aria-label')
-                            if not topic_name:
-                                    no_topic_name_count -= 1
-                                    if not no_topic_name_count: break
-                                    continue
-                            materia.topicos.append(Topico(topic_name))
-                            for a in as_:
-                                    if a.get('onclick') is not None:
-                                            sub_topic_name, sub_topic_type = ' '.join(a.text.split()[:-1]), ''.join(a.text.split()[-1:])
-                                            if sub_topic_name is None: continue
-                                            sub_topic_link = a['href']
-                                            t = materia.topicos[-1]
-                                            if not any(sub_topic_name == st.name for st in t.subtopicos):
-                                                    t.subtopicos.append(Subtopico(sub_topic_name, sub_topic_link, sub_topic_type))
-                                            if sub_topic_type == 'Tarefa':
-                                                    tarefa_page = BeautifulSoup(self.session.get(sub_topic_link).text, 'lxml')
-                                                    tarefa_name = tarefa_page.find_all('h2')[0].text
-                                                    tarefa_desc = tarefa_page.find_all('div', attrs={'id':'intro'})[0].text
-                                                    tarefa_table = tarefa_page.find_all('table', class_='generaltable')[0]
-                                                    tds = tarefa_table.find_all('td')
-                                                    j = 0
-                                                    tarefa = Tarefa(tarefa_name, tarefa_desc)
-                                                    tarefa_ik = None
-                                                    for td in tds:
-                                                            tarefa_attrib = td.text
-                                                            j += 1
-                                                            if j == 10: break  # exceeded useful table rows
-                                                            if not tarefa_ik:
-                                                                    tarefa_ik = tarefa_attrib.rstrip()
-                                                            else:
-                                                                    # if tarefa_ik == 'Data de entrega': tarefa_attrib = parse_datetime_moodle(tarefa_attrib)
-                                                                    tarefa.info.update({tarefa_ik: tarefa_attrib})
-                                                                    tarefa_ik = None
-                                                    if tarefa:
-                                                            tarefa.due_date = parse_datetime_moodle(tarefa.info['Data de entrega'])
-                                                            t.subtopicos[-1].tarefas.append(tarefa)
-                            i += 1
-            return materias
+        materias = []
+        bs = BeautifulSoup(html, 'lxml')
+        as_ = bs.find_all('a', href=True)
+        for a in as_:
+            if 'course' in a['href'] and a.get('title') is not None:
+                title = a.get('title')
+                if title not in materias and re.search(r'\s\d{4}/\d+$', title) is not None:
+                    materia = Materia(a['title'], a['href'])
+                    if not any(materia.name in m.name for m in materias):
+                        materias.append(materia)
+        if v >= 1:
+            print('Fetching..:')
+            for m in materias: print(m.hash(), str(m))
+        [print(str(m)) for m in materias]
+        for materia in materias:
+            bs = BeautifulSoup(self.session.get(materia.link).text, 'lxml')
+            i = 1
+            no_topic_name_count = 10
+            while True:
+                sec = bs.find(id='section-' + str(i))
+                if sec is None: break
+                as_ = BeautifulSoup(str(sec), 'lxml').find_all('a', href=True)
+                topic_name = sec.get('aria-label')
+                if not topic_name:
+                        no_topic_name_count -= 1
+                        if not no_topic_name_count: break
+                        continue
+                materia.topicos.append(Topico(topic_name))
+                for a in as_:
+                    if a.get('onclick') is not None:
+                        sub_topic_name, sub_topic_type = ' '.join(a.text.split()[:-1]), ''.join(a.text.split()[-1:])
+                        if sub_topic_name is None: continue
+                        sub_topic_link = a['href']
+                        t = materia.topicos[-1]
+                        if not any(sub_topic_name == st.name for st in t.subtopicos): t.subtopicos.append(Subtopico(sub_topic_name, sub_topic_link, sub_topic_type))
+                        if sub_topic_type == 'Tarefa':
+                            tarefa_page = BeautifulSoup(self.session.get(sub_topic_link).text, 'lxml')
+                            tarefa_name = tarefa_page.find_all('h2')[0].text
+                            tarefa_desc = tarefa_page.find_all('div', attrs={'id':'intro'})[0].text
+                            tarefa_table = tarefa_page.find_all('table', class_='generaltable')[0]
+                            tds = tarefa_table.find_all('td')
+                            j = 0
+                            tarefa = Tarefa(tarefa_name, tarefa_desc)
+                            tarefa_ik = None
+                            for td in tds:
+                                tarefa_attrib = td.text
+                                j += 1
+                                if j == 10: break  # exceeded useful table rows
+                                if not tarefa_ik: tarefa_ik = tarefa_attrib.rstrip()
+                                else:
+                                    # if tarefa_ik == 'Data de entrega': tarefa_attrib = parse_datetime_moodle(tarefa_attrib)
+                                    tarefa.info.update({tarefa_ik: tarefa_attrib})
+                                    tarefa_ik = None
+                            if tarefa:
+                                tarefa.due_date = parse_datetime_moodle(tarefa.info['Data de entrega'])
+                                t.subtopicos[-1].tarefas.append(tarefa)
+                i += 1
+        return materias
 
     # ----------------------------------------------------
     #                       TIA

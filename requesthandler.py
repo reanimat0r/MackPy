@@ -71,20 +71,28 @@ show - Mostrar <tarefas|horarios|notas>
         elif text == '/start':
                 self.safe_send(msg, 'Insira TIA')
                 self.pending[chat_id] = 'tia'
-        elif text == '/fetch':
+        elif '/fetch' in text:
                 if not chat_id in self.users and not self.get_user(chat_id): 
                     self.safe_send(msg, '/start primeiro')
-                elif 'tarefas' in text:
+                elif 'materias' in text:
                     self.safe_send(msg, 'Fetching matérias...')
-                    print(self.get_user(chat_id))
-                    mack = Mackenzie(*self.get_user(chat_id))
+                    mack = Mackenzie(self.con, *self.get_user(chat_id))
                     materias = mack.get_materias(fetch=True, diff=False)
                     response = '\n'.join(m.name for m in materias)
                     # TODO insert details about update (diff)
                     if not response: self.safe_send(msg, '/fetch failed.')
                     else: self.safe_send(msg, response)
+                elif 'tarefas' in text:
+                    self.safe_send(msg, 'Fetching tarefas...')
+                    mack = Mackenzie(self.con, *self.get_user(chat_id))
+                    tarefas = mack.get_tarefas(fetch=False)
+                    response = '\n'.join(str(t) for t in tarefas)
+                    if not response: self.safe_send(msg, '/fetch failed')
+                    else: self.safe_send(msg, response)
                 elif 'notas' in text:
-                    self.safe_send(msg, )
+                    self.safe_send(msg, 'Fetching notas')
+                    mack = Mackenzie(self.con, *self.get_user(chat_id))
+                    notas = mack.get_notas(fetch=True)
         elif text.startswith('/show'):  # tarefas, materias, horarios, notas
             try:
                 arg = text.split()[1]
