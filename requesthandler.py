@@ -74,25 +74,35 @@ show - Mostrar <tarefas|horarios|notas>
         elif text == '/fetch':
                 if not chat_id in self.users and not self.get_user(chat_id): 
                     self.safe_send(msg, '/start primeiro')
-                else:
+                elif 'tarefas' in text:
                     self.safe_send(msg, 'Fetching matérias...')
                     print(self.get_user(chat_id))
                     mack = Mackenzie(*self.get_user(chat_id))
                     materias = mack.get_materias(fetch=True, diff=False)
                     response = '\n'.join(m.name for m in materias)
                     # TODO insert details about update (diff)
-                    if not response:
-                            self.safe_send(msg, '/fetch failed.')
-                    else:
-                            self.safe_send(msg, response)
+                    if not response: self.safe_send(msg, '/fetch failed.')
+                    else: self.safe_send(msg, response)
+                elif 'notas' in text:
+                    self.safe_send(msg, )
         elif text.startswith('/show'):  # tarefas, materias, horarios, notas
             try:
                 arg = text.split()[1]
-                if arg.strip().lower() == 'tarefas':
+                what = arg.strip().lower()
+                if what  == 'tarefas':
                     tarefas = self.mack.get_tarefas()
                     self.safe_send(msg, '\n'.join([str(t) for t in tarefas]))
-            except: self.safe_send(msg, self.help[text])
-
+                elif what == 'notas':
+                    notas = self.mack.get_notas()
+                    print(notas)
+                elif what == 'materias':
+                    materias = self.mack.get_materias() 
+                    print(notas)
+            except: 
+                if text in self.help[text]: response = self.help[text]
+                else: response = 'Not implemented'
+                self.safe_send(msg, response)
+                
         elif text.startswith('/remind'):  # tarefas, materias, horarios, notas
                 pass
         elif text.startswith('/watch'):  # tarefas, materias, horarios, notas
@@ -102,5 +112,5 @@ show - Mostrar <tarefas|horarios|notas>
                 self.safe_send(msg, unimsg)
 
 if __name__  == '__main__':
-        rh = RequestHandler(None)
+        rh = RequestHandler()
         print(rh.help)

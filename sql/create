@@ -6,3 +6,8 @@ CREATE TABLE `users` (
 	`last_refresh`	TEXT,
 	PRIMARY KEY(chat_id,tia)
 );
+CREATE TABLE materia(
+	tia INTEGER PRIMARY KEY,
+	json TEXT,
+	FOREIGN KEY(tia) REFERENCES users(tia)
+);

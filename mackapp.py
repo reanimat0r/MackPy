@@ -41,7 +41,6 @@ class Mackenzie():
             self.user = user
             self.pwd = pwd
             self.login_status={'tia':False,'moodle':False}
-#                 atexit.register(self.save_userdata)
             self._usage = '''Mack App\n\nUsage: python3 mackapp.py [-g] [-m tia] [-p senha] [-i] [-h] [-v] targets\n
                             Options:
                                     -g      interface gráfica
@@ -69,28 +68,15 @@ class Mackenzie():
     def login_moodle(self, v=True):
             self.logging_in_moodle = True
             #session_moodle = r1.cookies['MoodleSessionmoodle']
-            res = self.session.post(self._moodle_login, data={'username': self.user, 'password': self.pwd}, headers={
-                'Referer':'https://moodle.mackenzie.br/moodle/',
-                'Host': 'moodle.mackenzie.br',
-                'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:58.0) Gecko/20100101 Firefox/58.0',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5',
-                'Accept-Encoding': 'gzip, deflate, br',
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'DNT':1,
-                'Connection':'keep-alive',
-                'Upgrade-Insecure-Requests':1
-                }, allow_redirects=True)
+            res = self.session.post(self._moodle_login, data={'username': self.user, 'password': self.pwd}, headers={}, allow_redirects=True)
             print(self.session.cookies) 
             res = self.session.get('https://moodle.mackenzie.br/moodle/login/index.php?testsession=25632')
             print(self.session.cookies) 
             res = self.session.get('https://moodle.mackenzie.br/moodle/')
             print(self.session.cookies) 
-            self.logged_in_moodle = 'Minhas Disciplinas/Cursos' in res.text
-            self.logging_in_moodle = False
-            if v: print('Logged in.' if self.logged_in_moodle else 'Could not log in.')
-            return self.logged_in_moodle
-
+            self.login_status['moodle'] = 'Minhas Disciplinas/Cursos' in res.text
+            if v: print('Logged in.' if self.login_status['moodle'] else 'Could not log in.')
+            return self.login_status['moodle']
     # TODO
     def _diff(self, m, nm):
             return None
@@ -127,6 +113,7 @@ class Mackenzie():
             if v >= 1:
                     print('Fetching..:')
                     for m in materias: print(m.hash(), str(m))
+            [print(str(m)) for m in materias]
             for materia in materias:
                     bs = BeautifulSoup(self.session.get(materia.link).text, 'lxml')
                     i = 1
@@ -185,10 +172,17 @@ class Mackenzie():
             headers = dict(referer=self._tia_index)
             self.session.post(self._tia_verifica, data=data, headers=headers, allow_redirects=True)
             res = self.session.get(self._tia_index2).text
-            self.logged_in_tia = self.user in res
+            self.login_status['tia'] = self.user in res
             if v: print('Entrou no TIA')
-            if 'manuten' in res: raise Exception('MANUTENCAO')
-            return self.logged_in_tia
+            if 'manuten' in res.text: raise Exception('MANUTENCAO')
+            return self.login_status['tia']
+
+    def get_horarios(self):
+            return self._extract_horarios(self.session.get(self._tia_horarios).text)
+
+    def get_notas(self, fetch=False):
+            
+            return self._extract_notas(self.session.get(self._tia_notas).text)
 
     def _extract_horarios(self, html): # TODO update self.materias instead
             if not self.logged_in_tia: raise Exception('Not logged in Moodle')
@@ -208,9 +202,6 @@ class Mackenzie():
                                     refined[dias[j - 1]][hor] = l[j]
             return refined
 
-    def get_horarios(self):
-            return self._extract_horarios(self.session.get(self._tia_horarios).text)
-
     def _extract_notas(self, html): # TODO same as above
             refined = {}
             cod_notas = {2: 'A', 3: 'B', 4: 'C', 5: 'D', 6: 'E', 7: 'F', 8: 'G', 9: 'H', 10: 'I', 11: 'J',
@@ -225,10 +216,6 @@ class Mackenzie():
                             if cod_notas[j] not in refined:
                                     refined[nome_materia][cod_notas[j]] = l[j]
             return refined
-
-    def get_notas(self):
-            if not self.logged_in_tia: raise Exception('Not logged in Moodle')
-            return self._extract_notas(self.session.get(self._tia_notas).text)
 
 
 # ----------------------------------------------------
