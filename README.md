@@ -1,5 +1,7 @@
 Objetivos:
 
+Linha 66: better help
+
 Definir estruturas de Materia, Tarefa, Horario, Nota e detalhes
 
 Background notification

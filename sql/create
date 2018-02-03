@@ -1,0 +1,8 @@
+
+CREATE TABLE `users` (
+	`chat_id`	TEXT NOT NULL UNIQUE,
+	`tia`	INTEGER NOT NULL UNIQUE,
+	`pwd`	TEXT,
+	`last_refresh`	TEXT,
+	PRIMARY KEY(chat_id,tia)
+);

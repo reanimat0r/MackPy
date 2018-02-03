@@ -1,11 +1,11 @@
 import atexit
+import sys
 import getpass
 import os
 import pickle
 import signal
 import sqlite3
 from tkinter import *
-
 import pandas as pd
 import requests
 from bs4 import BeautifulSoup
@@ -19,7 +19,7 @@ from requesthandler import *
 #                       SETUP
 # ----------------------------------------------------
 signal.signal(signal.SIGINT | signal.SIGKILL, exit_gracefully)  # does OR gating work in this scenario?
-
+DEFAULT_SQLITE_FILE = 'mack.sqlite'
 class Mackenzie():
         def __init__(self, user, pwd):
 #                 self.userdata_file = os.path.expanduser(userdata_file)
@@ -40,7 +40,7 @@ class Mackenzie():
                 self.busy = False
                 self.user = login
                 self.pwd = pwd
-                atexit.register(self.save_userdata)
+#                 atexit.register(self.save_userdata)
                 self._usage = '''Mack App\n\nUsage: python3 mackapp.py [-g] [-m tia] [-p senha] [-i] [-h] [-v] targets\n
                                 Options:
                                         -g      interface gráfica
@@ -73,6 +73,7 @@ class Mackenzie():
                 if v: print('Logged in.' if self.logged_in_moodle else 'Could not log in.')
                 return self.logged_in_moodle
 
+        # TODO
         def _diff(self, m, nm):
                 return None
 
@@ -289,17 +290,20 @@ def self_use(argv):
 
 def server_use(argv):
         argkv = process_args(argv)
-        mack = Mackenzie()
         if 'h' in argkv:
                 print(mack._server_usage)
                 return
-        bot = RequestHandler(mack)
+        bot = RequestHandler()
         bot.start()
         bot.join()
-
+def test_bd():
+    sqlite3.connect('mack.sqlite3')
+    sys.exit(0)
+    
 def main(argv):
+#     test_bd()
 #       test_materias()
-        server_use(argv)
+    server_use(argv)
 
 if __name__ == '__main__':
         main(sys.argv)
