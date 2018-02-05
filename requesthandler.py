@@ -93,6 +93,13 @@ show - Mostrar <tarefas|horarios|notas>
                     self.safe_send(msg, 'Fetching notas')
                     mack = Mackenzie(self.con, *self.get_user(chat_id))
                     notas = mack.get_notas(fetch=True)
+                elif 'horarios' in text:
+                    self.safe_send(msg, 'Fetching horários')
+                    mack = Mackenzie(self.con, *self.get_user(chat_id))
+                    horarios = mack.get_horarios(fetch=True)
+                    response = str(horarios)
+                    if not response: self.safe_send(msg, '/fetch failed')
+                    else: self.safe_send(msg, response)
         elif text.startswith('/show'):  # tarefas, materias, horarios, notas
             try:
                 arg = text.split()[1]

@@ -10,7 +10,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from lxml import html
-
+from collections import OrderedDict
 from entities import Materia, Topico, Subtopico, Tarefa
 from util import *
 from requesthandler import *
@@ -89,9 +89,20 @@ class Mackenzie():
                 tarefas.extend(m.all_tarefas())
         return sorted(tarefas, key=lambda t: t.due_date)
 
-    def clone(self):
+    def clone_materias(self):
         le_json = self.con.cursor().execute('SELECT json FROM materia WHERE tia=?', [self.user]).fetchone()
         self.materias = json.loads(le_json)
+        return self.materias
+
+    def clone_notas(self):
+        le_json = self.con.cursor().execute('SELECT json FROM notas WHERE tia=?', [self.user]).fetchone()
+        self.notas = json.loads(le_json)
+        return self.notas
+
+    def clone_horarios(self):
+        le_json = self.con.cursor().execute('SELECT json FROM horarios WHERE tia=?', [self.user]).fetchone()
+        self.horarios = json.loads(le_json)
+        return self.horarios
 
     def get_materias(self, fetch=False, diff=False, v=True):
         if not self.login_status['moodle']: self.login_moodle()
@@ -164,56 +175,64 @@ class Mackenzie():
     # ----------------------------------------------------
 
     def login_tia(self, v=True):
-            res = self.session.get(self._tia_index)
-            token = list(set(html.fromstring(res.text).xpath("//input[@name='token']/@value")))[0]
-            data = {'alumat': self.user, 'pass': self.pwd, 'token': token, 'unidade': '001'}
-            headers = dict(referer=self._tia_index)
-            self.session.post(self._tia_verifica, data=data, headers=headers, allow_redirects=True)
-            res = self.session.get(self._tia_index2).text
-            self.login_status['tia'] = self.user in res
-            if v: print('Entrou no TIA')
-            if 'manuten' in res.text: raise Exception('MANUTENCAO')
-            return self.login_status['tia']
+        res = self.session.get(self._tia_index)
+        token = list(set(html.fromstring(res.text).xpath("//input[@name='token']/@value")))[0]
+        data = {'alumat': self.user, 'pass': self.pwd, 'token': token, 'unidade': '001'}
+        headers = dict(referer=self._tia_index)
+        self.session.post(self._tia_verifica, data=data, headers=headers, allow_redirects=True)
+        res = self.session.get(self._tia_index2).text
+        self.login_status['tia'] = str(self.user) in res
+        if v: print('Entrou no TIA')
+        if 'manuten' in res: raise Exception('MANUTENCAO')
+        return self.login_status['tia']
 
-    def get_horarios(self):
-            return self._extract_horarios(self.session.get(self._tia_horarios).text)
+    def get_horarios(self, fetch=False):
+        if not self.login_status['tia']: self.login_tia()
+        if fetch:
+            horarios = self._extract_horarios(self.session.get(self._tia_horarios).text)
+            return jsonify(horarios)
+        return self.clone_horarios()
 
     def get_notas(self, fetch=False):
+        if not self.login_status['tia']: self.login_tia()
+        if fetch:
+            notas = self._extract_notas(self.session.get(self._tia_notas).text)
+            return notas
+        return self.clone_notas()
             
-            return self._extract_notas(self.session.get(self._tia_notas).text)
-
-    def _extract_horarios(self, html): # TODO update self.materias instead
-            if not self.logged_in_tia: raise Exception('Not logged in Moodle')
-            refined = {}
-            dias = {0: 'Seg', 1: 'Ter', 2: 'Qua', 3: 'Qui', 4: 'Sex', 5: 'Sab'}
-            lists = pd.read_html(html)[1].values.tolist()
-            for i in range(1, len(lists)):
-                    l = lists[i]
-                    hor = l[0]
-                    for j in range(1, len(l)):
-                            if dias[j - 1] not in refined:
-                                    refined[dias[j - 1]] = []
-                                    if hor not in refined[dias[j - 1]]: refined[dias[j - 1]] = {}
-                            try:
-                                    refined[dias[j - 1]][hor] = l[j][:l[j].index('(') - 1]
-                            except:
-                                    refined[dias[j - 1]][hor] = l[j]
-            return refined
+    def _extract_horarios(self, html): 
+        if not self.login_status['tia']: self.login_tia() 
+        refined = OrderedDict()
+        dias = {0: 'Seg', 1: 'Ter', 2: 'Qua', 3: 'Qui', 4: 'Sex', 5: 'Sab'}
+        lists = pd.read_html(html)[1].values.tolist()
+        for i in range(1, len(lists)):
+            l = lists[i]
+            hor = l[0]
+            for j in range(1, len(l)):
+                if dias[j - 1] not in refined:
+                    refined[dias[j - 1]] = []
+                    if hor not in refined[dias[j - 1]]: refined[dias[j - 1]] = OrderedDict()
+                try:
+                    refined[dias[j - 1]][hor] = l[j][:l[j].index('(') - 1]
+                except:
+                    refined[dias[j - 1]][hor] = l[j]
+#                 refined[dias[j - 1]].sort()
+        return refined
 
     def _extract_notas(self, html): # TODO same as above
-            refined = {}
-            cod_notas = {2: 'A', 3: 'B', 4: 'C', 5: 'D', 6: 'E', 7: 'F', 8: 'G', 9: 'H', 10: 'I', 11: 'J',
-                         12: 'NI1', 13: 'NI2', 14: 'SUB', 15: 'PARTIC', 16: 'MI', 17: 'PF', 18: 'MF'}
-            lists = pd.read_html(html)[1].values.tolist()
-            for i in range(0, len(lists)):
-                    l = lists[i]
-                    cod_materia = l[0]
-                    nome_materia = l[1]
-                    refined[nome_materia] = {'id': cod_materia}
-                    for j in range(2, len(l)):
-                            if cod_notas[j] not in refined:
-                                    refined[nome_materia][cod_notas[j]] = l[j]
-            return refined
+        refined = {}
+        cod_notas = {2: 'A', 3: 'B', 4: 'C', 5: 'D', 6: 'E', 7: 'F', 8: 'G', 9: 'H', 10: 'I', 11: 'J',
+                     12: 'NI1', 13: 'NI2', 14: 'SUB', 15: 'PARTIC', 16: 'MI', 17: 'PF', 18: 'MF'}
+        lists = pd.read_html(html)[1].values.tolist()
+        for i in range(0, len(lists)):
+                l = lists[i]
+                cod_materia = l[0]
+                nome_materia = l[1]
+                refined[nome_materia] = {'id': cod_materia}
+                for j in range(2, len(l)):
+                        if cod_notas[j] not in refined:
+                                refined[nome_materia][cod_notas[j]] = l[j]
+        return refined
 
 
 # ----------------------------------------------------
