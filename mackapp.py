@@ -13,6 +13,7 @@ from lxml import html
 from collections import OrderedDict
 from entities import Materia, Topico, Subtopico, Tarefa
 from util import *
+import jsonpickle
 from requesthandler import *
 
 # ----------------------------------------------------
@@ -38,6 +39,7 @@ class Mackenzie():
             self._tia_notas = self._tia_home + 'notasChamada.php'
             self.session = requests.session()
             self.con = con;
+            self.cursor = con.cursor()
             self.busy = False
             self.user = user
             self.pwd = pwd
@@ -89,6 +91,9 @@ class Mackenzie():
                 tarefas.extend(m.all_tarefas())
         return sorted(tarefas, key=lambda t: t.due_date)
 
+    def update_materias(self):
+        self.materias
+
     def clone_materias(self):
         le_json = self.con.cursor().execute('SELECT json FROM materia WHERE tia=?', [self.user]).fetchone()
         self.materias = json.loads(le_json)
@@ -106,8 +111,11 @@ class Mackenzie():
 
     def get_materias(self, fetch=False, diff=False, v=True):
         if not self.login_status['moodle']: self.login_moodle()
-        if fetch: self.materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)
-        else: self.clone()
+        if fetch: 
+            self.materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)
+            self.cursor.execute('INSERT INTO materia VALUES(?,?)', [self.user, jsonpickle.encode(self.materias)])
+            self.con.commit()
+        else: self.clone_materias()
         return self.materias
 
     def _fetch_materias(self, html, v=True):
@@ -197,7 +205,7 @@ class Mackenzie():
         if not self.login_status['tia']: self.login_tia()
         if fetch:
             notas = self._extract_notas(self.session.get(self._tia_notas).text)
-            return notas
+            return str(jsonify(notas)).decode('utf-8')
         return self.clone_notas()
             
     def _extract_horarios(self, html): 
@@ -212,13 +220,16 @@ class Mackenzie():
                     if dias[j - 1] not in refined:
                         refined[dias[j - 1]] = []
                         if hor not in refined[dias[j - 1]]: refined[dias[j - 1]] = OrderedDict()
-                    try: refined[dias[j - 1]][hor] = l[j][:l[j].index('(') - 1]
-                    except: refined[dias[j - 1]][hor] = l[j]
+                    try: refined[dias[j - 1]][hor] = l[j][:].replace('\u00c3','e').replace('\u00a9','')
+                    except:refined[dias[j - 1]][hor] = l[j] 
             return refined
         lists = pd.read_html(html)[1].values.tolist()
         refined = extract_table(refined, lists, dias)
         lists = pd.read_html(html)[2].values.tolist()
         refined = extract_table(refined, lists, dias)
+        for k,v in refined.copy().items():
+            for hora,aula in v.copy().items():
+                if aula == '--': del refined[k][hora]
         return refined
 
     def _extract_notas(self, html): # TODO same as above
@@ -258,52 +269,6 @@ def process_args(args):
             elif value is None:
                     argskv[key[1:]] = True
     return argskv
-
-
-
-
-def self_use(argv):
-    argskv = process_args(argv)
-    mack = Mackenzie()
-    if 'h' in argskv:
-            print(mack._usage)
-            return
-    v = 'v' in argskv
-    i = 'i' in argskv or not argskv
-    logged_in_tia = False
-    logged_in_moodle = False
-    command_seq = list(filter(lambda k: not k.startswith('-'), argskv.keys()))
-    if not command_seq and not i: i = True  # if theres no command, force interactive
-    m, n = None, None
-    while not m or not p:  # TODO: have argskv override mack.config
-            m = argskv['m'] if 'm' in argskv else mack.userdata['user'] if 'user' in mack.userdata else input('Matricula: ')
-            p = argskv['p'] if 'p' in argskv else mack.userdata['password'] if 'password' in mack.userdata else getpass.getpass(
-                    'Senha: ')
-    while True:
-            if i:
-                    try:
-                            o = input(''' Operacoes:\n\tTarefas\n\tNotas\n\tHorarios\n\nOperacao: ''').lower()
-                    except Exception as e:
-                            print(e)
-                            continue
-            else:
-                    try:
-                            o = command_seq.pop()
-                    except:
-                            break
-            out = None
-            if o == 'tarefas':
-                    if not logged_in_moodle: logged_in_moodle = mack.login_moodle(v=v)
-                    out = mack.get_materias()
-            elif o == 'notas':
-                    if not logged_in_tia: logged_in_tia = mack.login_tia(m, p, v)
-                    out = mack.get_notas()
-            elif o == 'horarios':
-                    if not logged_in_tia: logged_in_tia = mack.login_tia(m, p, v)
-                    out = mack.get_horarios()
-            print(jsonify(out))
-            if not i: break
-
 
 def server_use(argv):
     argkv = process_args(argv)
