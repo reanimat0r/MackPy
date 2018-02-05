@@ -94,19 +94,20 @@ class Mackenzie():
     def update_materias(self):
         self.materias
 
-    def clone_materias(self):
+    def _clone_materias(self):
         le_json = self.con.cursor().execute('SELECT json FROM materia WHERE tia=?', [self.user]).fetchone()
         self.materias = json.loads(le_json)
         return self.materias
 
-    def clone_notas(self):
+    def _clone_notas(self):
         le_json = self.con.cursor().execute('SELECT json FROM notas WHERE tia=?', [self.user]).fetchone()
         self.notas = json.loads(le_json)
         return self.notas
 
-    def clone_horarios(self):
+    def _clone_horarios(self):
         le_json = self.con.cursor().execute('SELECT json FROM horarios WHERE tia=?', [self.user]).fetchone()
-        self.horarios = json.loads(le_json)
+        if le_json: self.horarios = json.loads(le_json)
+        else: self.horarios = None 
         return self.horarios
 
     def get_materias(self, fetch=False, diff=False, v=True):
@@ -115,7 +116,7 @@ class Mackenzie():
             self.materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)
             self.cursor.execute('INSERT INTO materia VALUES(?,?)', [self.user, jsonpickle.encode(self.materias)])
             self.con.commit()
-        else: self.clone_materias()
+        else: self._clone_materias()
         return self.materias
 
     def _fetch_materias(self, html, v=True):
@@ -130,7 +131,6 @@ class Mackenzie():
                     if not any(materia.name in m.name for m in materias):
                         materias.append(materia)
         if v >= 1:
-            print('Fetching..:')
             for m in materias: print(m.hash(), str(m))
         [print(str(m)) for m in materias]
         for materia in materias:
@@ -195,20 +195,22 @@ class Mackenzie():
         return self.login_status['tia']
 
     def get_horarios(self, fetch=False):
-        if not self.login_status['tia']: self.login_tia()
         if fetch:
-            horarios = self._extract_horarios(self.session.get(self._tia_horarios).text)
+            if not self.login_status['tia']: self.login_tia()
+            horarios = self._extract_horarios(self.session.get(self._tia_horarios).text.replace('Sala',' Sala'))
+            self.cursor.execute('INSERT OR REPLACE INTO horarios VALUES (?,?)', [self.user, jsonify(horarios)])
+            self.con.commit()
             return jsonify(horarios)
-        return self.clone_horarios()
+        return self._clone_horarios()
 
     def get_notas(self, fetch=False):
         if not self.login_status['tia']: self.login_tia()
         if fetch:
             notas = self._extract_notas(self.session.get(self._tia_notas).text)
-            return str(jsonify(notas)).decode('utf-8')
-        return self.clone_notas()
+            return jsonify(notas)
+        return self._clone_notas()
             
-    def _extract_horarios(self, html): 
+    def _extract_horarios(self, html): # passing 
         if not self.login_status['tia']: self.login_tia() 
         refined = OrderedDict()
         dias = {0: 'Seg', 1: 'Ter', 2: 'Qua', 3: 'Qui', 4: 'Sex', 5: 'Sab'}

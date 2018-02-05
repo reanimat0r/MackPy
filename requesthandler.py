@@ -93,6 +93,8 @@ show - Mostrar <tarefas|horarios|notas>
                     self.safe_send(msg, 'Fetching notas')
                     mack = Mackenzie(self.con, *self.get_user(chat_id))
                     notas = mack.get_notas(fetch=True)
+                    if not notas: self.safe_send(msg, '/fetch failed')
+                    else: self.safe_send(msg, notas)
                 elif 'horarios' in text:
                     self.safe_send(msg, 'Fetching horários')
                     mack = Mackenzie(self.con, *self.get_user(chat_id))
@@ -101,21 +103,27 @@ show - Mostrar <tarefas|horarios|notas>
                     else: self.safe_send(msg, horarios)
         elif text.startswith('/show'):  # tarefas, materias, horarios, notas
             try:
-                arg = text.split()[1]
-                what = arg.strip().lower()
+                what = text.replace('/show ','')
+                mack = Mackenzie(self.con, *self.get_user(chat_id))
                 if what  == 'tarefas':
-                    tarefas = self.mack.get_tarefas()
-                    self.safe_send(msg, '\n'.join([str(t) for t in tarefas]))
+                    tarefas = mack.get_tarefas()
+                    response = '\n'.join([str(t) for t in tarefas])
                 elif what == 'notas':
-                    notas = self.mack.get_notas()
-                    print(notas)
+                    notas = mack.get_notas()
+                    response = notas
+                    self.safe_send(msg, notas)
+                elif what == 'horarios':
+                    horarios = mack.get_horarios()
+                    response = horarios
                 elif what == 'materias':
-                    materias = self.mack.get_materias() 
-                    print(notas)
-            except: 
-                if text in self.help[text]: response = self.help[text]
+                    materias = mack.get_materias()
+                    response = materias
+                if not response:self.safe_send(msg, 'No results; try /fetch ' + what + '?')
+                else: self.safe_send(msg, response)
+            except Exception as e: 
+                if text in self.help: response = self.help[text]
                 else: response = 'Not implemented'
-                self.safe_send(msg, response)
+                self.safe_send(msg, str(e) + '\n' + response)
                 
         elif text.startswith('/remind'):  # tarefas, materias, horarios, notas
                 pass
