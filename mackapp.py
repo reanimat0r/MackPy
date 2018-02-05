@@ -204,19 +204,21 @@ class Mackenzie():
         if not self.login_status['tia']: self.login_tia() 
         refined = OrderedDict()
         dias = {0: 'Seg', 1: 'Ter', 2: 'Qua', 3: 'Qui', 4: 'Sex', 5: 'Sab'}
+        def extract_table(refined, lists, dias):
+            for i in range(1, len(lists)):
+                l = lists[i]
+                hor = l[0]
+                for j in range(1, len(l)):
+                    if dias[j - 1] not in refined:
+                        refined[dias[j - 1]] = []
+                        if hor not in refined[dias[j - 1]]: refined[dias[j - 1]] = OrderedDict()
+                    try: refined[dias[j - 1]][hor] = l[j][:l[j].index('(') - 1]
+                    except: refined[dias[j - 1]][hor] = l[j]
+            return refined
         lists = pd.read_html(html)[1].values.tolist()
-        for i in range(1, len(lists)):
-            l = lists[i]
-            hor = l[0]
-            for j in range(1, len(l)):
-                if dias[j - 1] not in refined:
-                    refined[dias[j - 1]] = []
-                    if hor not in refined[dias[j - 1]]: refined[dias[j - 1]] = OrderedDict()
-                try:
-                    refined[dias[j - 1]][hor] = l[j][:l[j].index('(') - 1]
-                except:
-                    refined[dias[j - 1]][hor] = l[j]
-#                 refined[dias[j - 1]].sort()
+        refined = extract_table(refined, lists, dias)
+        lists = pd.read_html(html)[2].values.tolist()
+        refined = extract_table(refined, lists, dias)
         return refined
 
     def _extract_notas(self, html): # TODO same as above
