@@ -129,6 +129,8 @@ show - Mostrar <tarefas|horarios|notas>
                 pass
         elif text.startswith('/watch'):  # tarefas, materias, horarios, notas
                 pass
+        elif text.startswith('/watch'):  # tarefas, materias, horarios, notas
+            pass
         else:
                 unimsg = 'Unrecognized command: ' + text
                 self.safe_send(msg, unimsg)

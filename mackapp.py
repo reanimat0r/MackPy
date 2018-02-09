@@ -5,6 +5,7 @@ import os
 import pickle
 import signal
 import sqlite3
+from lxml import etree
 from tkinter import *
 import pandas as pd
 import requests
@@ -95,18 +96,19 @@ class Mackenzie():
         self.materias
 
     def _clone_materias(self):
-        le_json = self.con.cursor().execute('SELECT json FROM materia WHERE tia=?', [self.user]).fetchone()
-        self.materias = json.loads(le_json)
+        le_json = self.con.cursor().execute('SELECT json FROM materia WHERE tia=?', [self.user]).fetchone()[0]
+        print(type(le_json))
+#         try: self.materias = jsonpickle.decode(le_json)
         return self.materias
 
     def _clone_notas(self):
-        le_json = self.con.cursor().execute('SELECT json FROM notas WHERE tia=?', [self.user]).fetchone()
+        le_json = self.con.cursor().execute('SELECT json FROM notas WHERE tia=?', [self.user]).fetchone()[0]
         self.notas = json.loads(le_json)
         return self.notas
 
     def _clone_horarios(self):
-        le_json = self.con.cursor().execute('SELECT json FROM horarios WHERE tia=?', [self.user]).fetchone()
-        if le_json: self.horarios = json.loads(le_json)
+        le_json = self.con.cursor().execute('SELECT json FROM horarios WHERE tia=?', [self.user]).fetchone()[0]
+        if le_json: self.horarios = jsonify(json.loads(le_json))
         else: self.horarios = None 
         return self.horarios
 
@@ -114,7 +116,7 @@ class Mackenzie():
         if not self.login_status['moodle']: self.login_moodle()
         if fetch: 
             self.materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)
-            self.cursor.execute('INSERT INTO materia VALUES(?,?)', [self.user, jsonpickle.encode(self.materias)])
+            self.cursor.execute('INSERT OR REPLACE INTO materia VALUES(?,?)', [self.user, jsonpickle.encode(self.materias)])
             self.con.commit()
         else: self._clone_materias()
         return self.materias
@@ -225,6 +227,8 @@ class Mackenzie():
                     try: refined[dias[j - 1]][hor] = l[j][:].replace('\u00c3','e').replace('\u00a9','')
                     except:refined[dias[j - 1]][hor] = l[j] 
             return refined
+#         print(rows)
+        self.read_html(html)
         lists = pd.read_html(html)[1].values.tolist()
         refined = extract_table(refined, lists, dias)
         lists = pd.read_html(html)[2].values.tolist()
@@ -233,6 +237,17 @@ class Mackenzie():
             for hora,aula in v.copy().items():
                 if aula == '--': del refined[k][hora]
         return refined
+
+    def read_html(self,html):
+        m = re.search('<table(.*)</table>', html, re.DOTALL)
+        table = etree.HTML(m.group(0)).find("body/table")
+        rows = iter(table)
+        headers = [col.text for col in next(rows)]
+        for row in rows:
+            print(row)
+            values = [col.text for col in row]
+            print(dict(zip(headers, values)))
+        
 
     def _extract_notas(self, html): # TODO same as above
         refined = {}
