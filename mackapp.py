@@ -7,7 +7,6 @@ import signal
 import sqlite3
 from lxml import etree
 from tkinter import *
-import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 from lxml import html
@@ -199,10 +198,10 @@ class Mackenzie():
     def get_horarios(self, fetch=False):
         if fetch:
             if not self.login_status['tia']: self.login_tia()
-            horarios = self._extract_horarios(self.session.get(self._tia_horarios).text.replace('Sala',' Sala'))
+            horarios = self._extract_horarios(self.session.get(self._tia_horarios).text)
             self.cursor.execute('INSERT OR REPLACE INTO horarios VALUES (?,?)', [self.user, jsonify(horarios)])
             self.con.commit()
-            return jsonify(horarios)
+            return jsonify(horarios).replace('}','').replace('{','').replace('"','').replace(',','')
         return self._clone_horarios()
 
     def get_notas(self, fetch=False):
@@ -216,22 +215,22 @@ class Mackenzie():
         if not self.login_status['tia']: self.login_tia() 
         refined = OrderedDict()
         dias = {0: 'Seg', 1: 'Ter', 2: 'Qua', 3: 'Qui', 4: 'Sex', 5: 'Sab'}
+        dias_lindo = {0:'unda',1:'ca',2:'rta',3:'nta',4:'ta',5:'ado'}
         def extract_table(refined, lists, dias):
             for i in range(1, len(lists)):
                 l = lists[i]
                 hor = l[0]
                 for j in range(1, len(l)):
-                    if dias[j - 1] not in refined:
-                        refined[dias[j - 1]] = []
-                        if hor not in refined[dias[j - 1]]: refined[dias[j - 1]] = OrderedDict()
-                    try: refined[dias[j - 1]][hor] = l[j][:].replace('\u00c3','e').replace('\u00a9','')
-                    except:refined[dias[j - 1]][hor] = l[j] 
+                    if str(dias[j - 1]+dias_lindo[j-1]) not in refined:
+                        refined[dias[j - 1]+dias_lindo[j-1]] = []
+                        if hor not in refined[dias[j - 1]+dias_lindo[j-1]]: refined[dias[j - 1]+dias_lindo[j-1]] = OrderedDict()
+                    print(l[j])
+                    try: refined[dias[j - 1]+dias_lindo[j-1]][hor] = re.sub('\s{2,}',' ',re.sub('\t',' ',re.sub('\s\(.*?\)','',l[j][:].replace('\u00c3','e').replace('\u00a9','').replace('\u00e1','a').replace('Predio', ' Predio').replace('Sala', ' Sala'))))
+                    except:refined[dias[j - 1]+dias_lindo[j-1]][hor] = l[j] 
             return refined
-#         print(rows)
-        self.read_html(html)
-        lists = pd.read_html(html)[1].values.tolist()
+        lists = self.read_html(html)[0]
         refined = extract_table(refined, lists, dias)
-        lists = pd.read_html(html)[2].values.tolist()
+        lists = self.read_html(html)[1]
         refined = extract_table(refined, lists, dias)
         for k,v in refined.copy().items():
             for hora,aula in v.copy().items():
@@ -239,29 +238,50 @@ class Mackenzie():
         return refined
 
     def read_html(self,html):
-        m = re.search('<table(.*)</table>', html, re.DOTALL)
-        table = etree.HTML(m.group(0)).find("body/table")
+        datas=[]
+        tables = BeautifulSoup(html,'lxml').select('table.table-bordered.table-striped')
+        for table in tables:
+            data = []
+            for row in table.findAll('tr'):
+                cell = row.findAll('td')
+                le_row = []
+                for point in cell:
+                    le_row.append(re.sub('<\/?(?:td|strong|br\/)>','',re.sub('<\/?div\s?(?:align=\"\w+\")?>', '',re.sub('\sbgcolor=\"\w*?\"', '', re.sub('\swidth=\"\d+%\"','', str(point))))))
+                    print(le_row[-1])
+                data.append(le_row)
+            datas.append(data)
+        return datas
+
+    def read_html_(self,html):
+        m = re.search('(<table.*?</table>)', html, re.DOTALL)
+        print(m.groups())
+        html = m.group(0).replace('><strong>','').replace('</strong>','').replace('<div>','').replace('</div>','')
+        html = re.sub('.*?=\".*?"', '', html)
+        print(html)
+        table = etree.HTML(html).find("body/table")
         rows = iter(table)
+        print('\n'*50, rows)
         headers = [col.text for col in next(rows)]
+        print('headers', headers)
         for row in rows:
             print(row)
             values = [col.text for col in row]
             print(dict(zip(headers, values)))
         
 
-    def _extract_notas(self, html): # TODO same as above
+    def _extract_notas(self, html):
         refined = {}
         cod_notas = {2: 'A', 3: 'B', 4: 'C', 5: 'D', 6: 'E', 7: 'F', 8: 'G', 9: 'H', 10: 'I', 11: 'J',
                      12: 'NI1', 13: 'NI2', 14: 'SUB', 15: 'PARTIC', 16: 'MI', 17: 'PF', 18: 'MF'}
         lists = pd.read_html(html)[1].values.tolist()
         for i in range(0, len(lists)):
-                l = lists[i]
-                cod_materia = l[0]
-                nome_materia = l[1]
-                refined[nome_materia] = {'id': cod_materia}
-                for j in range(2, len(l)):
-                        if cod_notas[j] not in refined:
-                                refined[nome_materia][cod_notas[j]] = l[j]
+            l = lists[i]
+            cod_materia = l[0]
+            nome_materia = l[1]
+            refined[nome_materia] = {'id': cod_materia}
+            for j in range(2, len(l)):
+                if cod_notas[j] not in refined:
+                    refined[nome_materia][cod_notas[j]] = l[j]
         return refined
 
 

@@ -39,7 +39,7 @@ show - Mostrar <tarefas|horarios|notas>
                 for m in messages: self.safe_send(msg, m)
         else:
                 self.bot.sendMessage(msg['chat']['id'], response)
-                print('TO {}: {}'.format(msg['from']['username'], response))
+                print('TO {}: {}'.format(msg['from']['id'], response))
 
     def run(self):
         print('Awaiting requests.')
@@ -78,15 +78,15 @@ show - Mostrar <tarefas|horarios|notas>
                     self.safe_send(msg, 'Fetching matérias...')
                     mack = Mackenzie(self.con, *self.get_user(chat_id))
                     materias = mack.get_materias(fetch=True, diff=False)
-                    response = '\n'.join(m.name for m in materias)
+                    response = '\n'.join(str(m) for m in materias)
                     # TODO insert details about update (diff)
                     if not response: self.safe_send(msg, '/fetch failed.')
                     else: self.safe_send(msg, response)
                 elif 'tarefas' in text:
                     self.safe_send(msg, 'Fetching tarefas...')
                     mack = Mackenzie(self.con, *self.get_user(chat_id))
-                    tarefas = mack.get_tarefas(fetch=False)
-                    response = '\n'.join(str(t) for t in tarefas)
+                    tarefas = mack.get_tarefas(fetch=True)
+                    response += '\n'.join(str(t) for t in tarefas)
                     if not response: self.safe_send(msg, '/fetch failed')
                     else: self.safe_send(msg, response)
                 elif 'notas' in text:
