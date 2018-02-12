@@ -1,4 +1,5 @@
 import time
+import re
 from time import mktime
 import datetime
 import time
@@ -36,10 +37,10 @@ def split_string(n, st):
 	return lst
 
 def make_help(commands):
-	split = commands.split('\n')
-	help = {}
-	for c in split:
-		if c and c.strip():
-			c,desc = c.split(' - ')
-			help.update({'/'+c:desc})
-	return help
+    split = commands.split('\n')
+    help = {}
+    for c in split:
+        if c and c.strip():
+            c,desc = c.split(' - ')
+            help.update({'/'+c:'        '+desc})
+    return help

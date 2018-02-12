@@ -20,12 +20,13 @@ class Materia: # adc nom prof
                 self.topicos = []
 
         def all_tarefas(self):
-                all_tarefas = []
+                all_tarefas_ = []
                 for t in self.topicos:
-                        all_tarefas.extend(t.all_tarefas()[:])
-                for t in all_tarefas:
-                        t.due_date = parse_datetime_moodle(t.info['Data de entrega'])
-                return sorted(all_tarefas,key=lambda t: t.due_date)
+                    all_tarefas_.extend(t.all_tarefas()[:])
+                for t in all_tarefas_:
+                    t.due_date = parse_datetime_moodle(t.info['Data de entrega'])
+                    t.info[self.name] = t.link
+                return sorted(all_tarefas_,key=lambda t: t.due_date)
 
         def hash(self):
                 hashes = ''
@@ -91,6 +92,7 @@ class Tarefa:
         def __init__(self, tarefa_name, tarefa_desc):
                 self.info = {'Título':tarefa_name, 'Descrição':tarefa_desc} # reconsiderar esta merda toda
                 self.due_date = None
+                self.link = None
 
         def __len__(self):
                 return len(self.info)

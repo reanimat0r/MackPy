@@ -21,25 +21,33 @@ class RequestHandler(threading.Thread):
         self.con = sqlite3.connect(DEFAULT_SQLITE_FILE, check_same_thread=False)
         self.cursor = self.con.cursor()
         self.users = {}
+        def send_alerts(users_table):
+            for user in users_table:
+                if user[3] and not datetime.datetime.now().hour % user[3]:
+                    mack = Mackenzie(self.con, *user[1:3])
+                    novas = mack.get_novas_tarefas()
+                    if novas: self.safe_send(user[0], novas)
+        users_table = self.cursor.execute('SELECT chat_id,tia,pwd,tarefas_interval FROM users').fetchall()
+        threading.Thread(target=send_alerts, args=[users_table]).start()
         try: self.bot = telepot.Bot(os.environ['MACK_BOT_TOKEN'])
         except: 
             print('\n'*30, 'CRIE A VARIAVEL DE AMBIENTE MACK_BOT_TOKEN com o token do seu bot', '\n'*30)
             sys.exit(0)
         self.pending = {}  # current awaited response (this can generate conflict between two users?)
         self.help = make_help('''
-start - Processo de autenticação
-fetch - Descobrir novas postagens
-materias - Todas as matérias encontradas
-show - Mostrar <tarefas|horarios|notas>
+start -   Processo de autenticacao
+add -       Sugira uma funcao
+fetch -   Descobrir novas postagens <tarefas|horarios|notas>
+show -     Mostrar <tarefas|horarios|notas>
         ''') # Ctrl+C,Ctrl+V@BotFather
 
-    def safe_send(self, msg, response):  # this mitigates telepot.exception.TelegramError: 'Bad Request: message is too long'
+    def safe_send(self, chat_id, response):  # this mitigates telepot.exception.TelegramError: 'Bad Request: message is too long'
         if len(response) > 4096:
-                messages = split_string(4096, response)
-                for m in messages: self.safe_send(msg, m)
+            messages = split_string(4096, response)
+            for m in messages: self.safe_send(chat_id, m)
         else:
-                self.bot.sendMessage(msg['chat']['id'], response)
-                print('TO {}: {}'.format(msg['from']['id'], response))
+            self.bot.sendMessage(chat_id, response)
+#             print('TO {}: {}'.format(msg['from']['id'], response))
 
     def run(self):
         print('Awaiting requests.')
@@ -63,44 +71,50 @@ show - Mostrar <tarefas|horarios|notas>
             self.users[chat_id][self.pending[chat_id]] = text
             if self.pending[chat_id] == 'tia':
                 self.pending[chat_id] = 'pwd'
-                self.safe_send(msg, 'Insira senha')
+                self.safe_send(chat_id, 'Insira senha')
             elif self.pending[chat_id] == 'pwd':
                 self.pending.pop(chat_id) # done with startup
                 self.insert_new_user(chat_id,self.users[chat_id]['tia'],self.users[chat_id]['pwd'])
-                self.safe_send(msg, 'Comandos: \n' + str(self.help))
+                self.safe_send(chat_id, 'Comandos: \n' + str(self.help))
         elif text == '/start':
-                self.safe_send(msg, 'Insira TIA')
-                self.pending[chat_id] = 'tia'
+            self.safe_send(chat_id, 'Insira TIA')
+            self.pending[chat_id] = 'tia'
+        elif text == '/when':
+            self.cursor.execute('SELECT last_refresh FROM users WHERE chat_id=?',[chat_id])
+            self.safe_send(chat_id,self.cursor.fetchone()) 
         elif '/fetch' in text:
                 if not chat_id in self.users and not self.get_user(chat_id): 
-                    self.safe_send(msg, '/start primeiro')
+                    self.safe_send(chat_id, '/start primeiro')
                 elif 'materias' in text:
-                    self.safe_send(msg, 'Fetching matérias...')
+                    self.safe_send(chat_id, 'Fetching matérias...')
                     mack = Mackenzie(self.con, *self.get_user(chat_id))
                     materias = mack.get_materias(fetch=True, diff=False)
                     response = '\n'.join(str(m) for m in materias)
                     # TODO insert details about update (diff)
-                    if not response: self.safe_send(msg, '/fetch failed.')
-                    else: self.safe_send(msg, response)
+                    if not response: self.safe_send(chat_id, '/fetch failed.')
+                    else: self.safe_send(chat_id, response)
                 elif 'tarefas' in text:
-                    self.safe_send(msg, 'Fetching tarefas...')
+                    self.safe_send(chat_id, 'Fetching tarefas...')
                     mack = Mackenzie(self.con, *self.get_user(chat_id))
                     tarefas = mack.get_tarefas(fetch=True)
-                    response += '\n'.join(str(t) for t in tarefas)
-                    if not response: self.safe_send(msg, '/fetch failed')
-                    else: self.safe_send(msg, response)
+                    response = '\n'.join(str(t) for t in tarefas)
+#                     response = re.sub(r'(https\:\/\/.*?\d+)',r'', response)
+                    if not response: self.safe_send(chat_id, '/fetch failed')
+                    else: self.safe_send(chat_id, response)
                 elif 'notas' in text:
-                    self.safe_send(msg, 'Fetching notas')
+                    self.safe_send(chat_id, 'Fetching notas')
                     mack = Mackenzie(self.con, *self.get_user(chat_id))
                     notas = mack.get_notas(fetch=True)
-                    if not notas: self.safe_send(msg, '/fetch failed')
-                    else: self.safe_send(msg, notas)
+                    if not notas: self.safe_send(chat_id, '/fetch failed')
+                    else: self.safe_send(chat_id, notas)
                 elif 'horarios' in text:
-                    self.safe_send(msg, 'Fetching horários')
+                    self.safe_send(chat_id, 'Fetching horários')
                     mack = Mackenzie(self.con, *self.get_user(chat_id))
                     horarios = mack.get_horarios(fetch=True)
-                    if not horarios: self.safe_send(msg, '/fetch failed')
-                    else: self.safe_send(msg, horarios)
+                    if not horarios: self.safe_send(chat_id, '/fetch failed')
+                    else: self.safe_send(chat_id, horarios)
+                else:
+                    self.safe_send(chat_id, '/fetch <materias|horarios|notas')
         elif text.startswith('/show'):  # tarefas, materias, horarios, notas
             try:
                 what = text.replace('/show ','')
@@ -111,29 +125,33 @@ show - Mostrar <tarefas|horarios|notas>
                 elif what == 'notas':
                     notas = mack.get_notas()
                     response = notas
-                    self.safe_send(msg, notas)
+                    self.safe_send(chat_id, notas)
                 elif what == 'horarios':
                     horarios = mack.get_horarios()
                     response = horarios
                 elif what == 'materias':
                     materias = mack.get_materias()
                     response = materias
-                if not response:self.safe_send(msg, 'No results; try /fetch ' + what + '?')
-                else: self.safe_send(msg, response)
+                if not response:self.safe_send(chat_id, 'No results; try /fetch ' + what + '?')
+                else: self.safe_send(chat_id, response)
             except Exception as e: 
-                if text in self.help: response = self.help[text]
+                if text in self.help: response = jsonify(self.help[text])
                 else: response = 'Not implemented'
-                self.safe_send(msg, str(e) + '\n' + response)
+                self.safe_send(chat_id, str(e) + '\n' + response)
                 
         elif text.startswith('/remind'):  # tarefas, materias, horarios, notas
-                pass
-        elif text.startswith('/watch'):  # tarefas, materias, horarios, notas
-                pass
+            pass
         elif text.startswith('/watch'):  # tarefas, materias, horarios, notas
             pass
+        elif text.startswith('/interval'):  # tarefas, materias, horarios, notas
+            text = text.replace('/interval')
+            if len(text) > 1:
+                self.cursor.execute('UPDATE users SET tarefas_interval = ? WHERE chat_id = ?',[int(text[1:]), chat_id])
+            else:
+                self.safe_send(chat_id, '/interval <fator_horas>')
         else:
-                unimsg = 'Unrecognized command: ' + text
-                self.safe_send(msg, unimsg)
+            friendly_help = re.sub('(?:{|}|\")|^\s+|^\t+|\'','',str(self.help).replace(',','\n').replace('  /','/'))
+            self.safe_send(chat_id,friendly_help)
 
 if __name__  == '__main__':
         rh = RequestHandler()

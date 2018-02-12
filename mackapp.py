@@ -1,4 +1,5 @@
 import atexit
+import time
 import sys
 import getpass
 import os
@@ -72,17 +73,11 @@ class Mackenzie():
         self.logging_in_moodle = True
         #session_moodle = r1.cookies['MoodleSessionmoodle']
         res = self.session.post(self._moodle_login, data={'username': self.user, 'password': self.pwd}, headers={}, allow_redirects=True)
-        print(self.session.cookies) 
         res = self.session.get('https://moodle.mackenzie.br/moodle/login/index.php?testsession=25632')
-        print(self.session.cookies) 
         res = self.session.get('https://moodle.mackenzie.br/moodle/')
-        print(self.session.cookies) 
         self.login_status['moodle'] = 'Minhas Disciplinas/Cursos' in res.text
         if v: print('Logged in.' if self.login_status['moodle'] else 'Could not log in.')
         return self.login_status['moodle']
-    # TODO
-    def _diff(self, m, nm):
-        return None
 
     def get_tarefas(self, fetch=False):
         self.get_materias(fetch=fetch)
@@ -96,9 +91,26 @@ class Mackenzie():
 
     def _clone_materias(self):
         le_json = self.con.cursor().execute('SELECT json FROM materia WHERE tia=?', [self.user]).fetchone()[0]
-        print(type(le_json))
-#         try: self.materias = jsonpickle.decode(le_json)
+        try: self.materias = jsonpickle.decode(le_json)
+        except Exception as e: print(e)
         return self.materias
+
+    def _clone_tarefas(self):
+        self._clone_materias()
+        tarefas = []
+        for m in self.materias:
+            tarefas.extend(m.all_tarefas())
+        return sorted(tarefas,key=lambda t: t.due_date)
+
+    def _diff_materias(self,materias1,materias2):
+        report = ''
+        if len(materias1) != len(materias2):
+            report+='Qtd materias mudou'
+        else:
+            for i in range(len(materias1)):
+                if materias1[i].name == materias2[i].name:
+                    print([str(t) for t in materias1[i].all_tarefas()])
+        return report           
 
     def _clone_notas(self):
         le_json = self.con.cursor().execute('SELECT json FROM notas WHERE tia=?', [self.user]).fetchone()[0]
@@ -116,12 +128,14 @@ class Mackenzie():
         if fetch: 
             self.materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)
             self.cursor.execute('INSERT OR REPLACE INTO materia VALUES(?,?)', [self.user, jsonpickle.encode(self.materias)])
+            self.cursor.execute('UPDATE users SET last_refresh=? WHERE tia=?', [time.strftime('%d/%m/%Y %H:%M'), self.user])
             self.con.commit()
         else: self._clone_materias()
         return self.materias
 
-    def _fetch_materias(self, html, v=True):
+    def _fetch_materias(self, html,v=False):
         materias = []
+        v = False
         bs = BeautifulSoup(html, 'lxml')
         as_ = bs.find_all('a', href=True)
         for a in as_:
@@ -133,7 +147,6 @@ class Mackenzie():
                         materias.append(materia)
         if v >= 1:
             for m in materias: print(m.hash(), str(m))
-        [print(str(m)) for m in materias]
         for materia in materias:
             bs = BeautifulSoup(self.session.get(materia.link).text, 'lxml')
             i = 1
@@ -163,6 +176,7 @@ class Mackenzie():
                             tds = tarefa_table.find_all('td')
                             j = 0
                             tarefa = Tarefa(tarefa_name, tarefa_desc)
+                            tarefa.link = sub_topic_link
                             tarefa_ik = None
                             for td in tds:
                                 tarefa_attrib = td.text
@@ -210,6 +224,15 @@ class Mackenzie():
             notas = self._extract_notas(self.session.get(self._tia_notas).text)
             return jsonify(notas)
         return self._clone_notas()
+
+    def get_novas_tarefas(self):
+        old_tarefas = [str(t) for t in self._clone_tarefas()]
+        new_tarefas = [str(t) for t in self.get_tarefas(fetch=True)]
+        old_tarefas_aux = old_tarefas[:]
+        new_tarefas_aux = new_tarefas[:]
+        diff = list(set(old_tarefas) - set(new_tarefas))
+        if diff:
+            return new_tarefas
             
     def _extract_horarios(self, html): # passing 
         if not self.login_status['tia']: self.login_tia() 
@@ -224,7 +247,6 @@ class Mackenzie():
                     if str(dias[j - 1]+dias_lindo[j-1]) not in refined:
                         refined[dias[j - 1]+dias_lindo[j-1]] = []
                         if hor not in refined[dias[j - 1]+dias_lindo[j-1]]: refined[dias[j - 1]+dias_lindo[j-1]] = OrderedDict()
-                    print(l[j])
                     try: refined[dias[j - 1]+dias_lindo[j-1]][hor] = re.sub('\s{2,}',' ',re.sub('\t',' ',re.sub('\s\(.*?\)','',l[j][:].replace('\u00c3','e').replace('\u00a9','').replace('\u00e1','a').replace('Predio', ' Predio').replace('Sala', ' Sala'))))
                     except:refined[dias[j - 1]+dias_lindo[j-1]][hor] = l[j] 
             return refined
@@ -246,28 +268,13 @@ class Mackenzie():
                 cell = row.findAll('td')
                 le_row = []
                 for point in cell:
-                    le_row.append(re.sub('<\/?(?:td|strong|br\/)>','',re.sub('<\/?div\s?(?:align=\"\w+\")?>', '',re.sub('\sbgcolor=\"\w*?\"', '', re.sub('\swidth=\"\d+%\"','', str(point))))))
-                    print(le_row[-1])
+                    le_row.append(re.sub('<\/?(?:td|strong|br\/)>','',
+                        re.sub('<\/?div\s?(?:align=\"\w+\")?>', '',
+                            re.sub('\sbgcolor=\"\w*?\"', '', 
+                                re.sub('\swidth=\"\d+%\"','', str(point))))))
                 data.append(le_row)
             datas.append(data)
         return datas
-
-    def read_html_(self,html):
-        m = re.search('(<table.*?</table>)', html, re.DOTALL)
-        print(m.groups())
-        html = m.group(0).replace('><strong>','').replace('</strong>','').replace('<div>','').replace('</div>','')
-        html = re.sub('.*?=\".*?"', '', html)
-        print(html)
-        table = etree.HTML(html).find("body/table")
-        rows = iter(table)
-        print('\n'*50, rows)
-        headers = [col.text for col in next(rows)]
-        print('headers', headers)
-        for row in rows:
-            print(row)
-            values = [col.text for col in row]
-            print(dict(zip(headers, values)))
-        
 
     def _extract_notas(self, html):
         refined = {}
@@ -317,13 +324,10 @@ def server_use(argv):
     bot.join()
 
 def test_materias():
-    mack = Mackenzie(31417485,19960428)
-#     mack.login_tia()
+    con = sqlite3.connect(DEFAULT_SQLITE_FILE, check_same_thread=False)
+    mack = Mackenzie(con, 31417485,19960428)
     mack.login_moodle(v=True)
-#     tarefas = mack.get_tarefas(fetch=True)
-#     for t in tarefas:
-#             print(t)
-#     sys.exit(0)
+    print(mack.get_novas_tarefas())
     
 def main(argv):
     server_use(argv)

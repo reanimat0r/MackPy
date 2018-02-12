@@ -8,6 +8,7 @@ CREATE TABLE `users` (
 	`tia`	INTEGER NOT NULL UNIQUE,
 	`pwd`	TEXT,
 	`last_refresh`	TEXT,
+    `tarefas_interval` INTEGER,
 	PRIMARY KEY(chat_id,tia)
 );
 CREATE TABLE materia(
