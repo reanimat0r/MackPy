@@ -25,7 +25,7 @@ class RequestHandler(threading.Thread):
             while True:
                 d = datetime.datetime.now()
                 for user in users_table:
-                    if user[3] and not d.hour % user[3] and d.second < 5:
+                    if user[3] and not d.hour % user[3] and d.minute == 0 and d.second < 5:
                         mack = Mackenzie(self.con, *user[1:3])
                         novas = mack.get_novas_tarefas()
                         if novas: self.safe_send(user[0], novas)
