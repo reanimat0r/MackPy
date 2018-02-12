@@ -3,7 +3,7 @@ import json
 from hashlib import sha1 # deprecated but fukkit dans fast
 from collections import OrderedDict
 
-def hash(o): # builtin hash function uses id function which depends on memory location which depends on ToE
+def myhash(o): # builtin hash function uses id function which depends on memory location which depends on ToE
         return sha1(o.encode('utf-8')).hexdigest()
 
 class Aluno:
@@ -82,31 +82,37 @@ class Subtopico:
 
 
         def __str__(self):
-                return '\n\t\t' + self.name + \
-                       '\n\t\t' + self.link + \
-                       '\n\t\t' + self.type + \
-                       '\n\t\t\t'.join([str(trf) for trf in self.tarefas]) + '\n\t\t'
+            return '\n\t\t' + self.name + \
+                   '\n\t\t' + self.link + \
+                   '\n\t\t' + self.type + \
+                   '\n\t\t\t'.join([str(trf) for trf in self.tarefas]) + '\n\t\t'
 
 
 class Tarefa:
         def __init__(self, tarefa_name, tarefa_desc):
-                self.info = {'Título':tarefa_name, 'Descrição':tarefa_desc} # reconsiderar esta merda toda
-                self.due_date = None
-                self.link = None
+            self.info = {'Título':tarefa_name, 'Descrição':tarefa_desc} # reconsiderar esta merda toda
+            self.due_date = None
+            self.link = None
 
         def __len__(self):
-                return len(self.info)
+            return len(self.info)
 
-        def hash(self):
-                hashes = ''
-                sorted_items = OrderedDict(sorted(self.info.items())).items()
-                for k,v in sorted_items:
-                        hashes+= hash(k)
-                        hashes+= hash(v)
-                return hash(hashes)
+        def __hash__(self):
+            content = aux_info = dict(self.info)
+            content.pop('Tempo restante')
+            return hash(frozenset(content.items()))
+
+        def __eq__(self, other):
+            if isinstance(other, self.__class__):
+                aux_info = dict(self.info)
+                other_aux_info = dict(other.info)
+                aux_info.pop('Tempo restante')
+                other_aux_info.pop('Tempo restante')
+                return aux_info == other_aux_info
+            else: return False
 
         def __str__(self):
-                return json.dumps(self.info, ensure_ascii=False, indent=4)
+            return json.dumps(self.info, ensure_ascii=False, indent=4)
 
 
 def test_hash():

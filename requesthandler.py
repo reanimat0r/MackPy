@@ -21,12 +21,14 @@ class RequestHandler(threading.Thread):
         self.con = sqlite3.connect(DEFAULT_SQLITE_FILE, check_same_thread=False)
         self.cursor = self.con.cursor()
         self.users = {}
-        def send_alerts(users_table):
-            for user in users_table:
-                if user[3] and not datetime.datetime.now().hour % user[3]:
-                    mack = Mackenzie(self.con, *user[1:3])
-                    novas = mack.get_novas_tarefas()
-                    if novas: self.safe_send(user[0], novas)
+        def send_alerts(users_table): # constant alerts upon news
+            while True:
+                d = datetime.datetime.now()
+                for user in users_table:
+                    if user[3] and not d.hour % user[3] and d.second < 5:
+                        mack = Mackenzie(self.con, *user[1:3])
+                        novas = mack.get_novas_tarefas()
+                        if novas: self.safe_send(user[0], novas)
         users_table = self.cursor.execute('SELECT chat_id,tia,pwd,tarefas_interval FROM users').fetchall()
         threading.Thread(target=send_alerts, args=[users_table]).start()
         try: self.bot = telepot.Bot(os.environ['MACK_BOT_TOKEN'])
@@ -37,6 +39,7 @@ class RequestHandler(threading.Thread):
         self.help = make_help('''
 start -   Processo de autenticacao
 add -       Sugira uma funcao
+interval - alterar intervalo entre checagem de tarefas
 fetch -   Descobrir novas postagens <tarefas|horarios|notas>
 show -     Mostrar <tarefas|horarios|notas>
         ''') # Ctrl+C,Ctrl+V@BotFather
@@ -55,7 +58,7 @@ show -     Mostrar <tarefas|horarios|notas>
 
     def insert_new_user(self, chat_id, tia, pwd):
         try:
-            self.cursor.execute('INSERT INTO users VALUES (?,?,?,\'\')',[chat_id,tia,pwd])
+            self.cursor.execute('INSERT INTO users VALUES (?,?,?,\'\',0)',[chat_id,tia,pwd])
             self.con.commit()
         except: print('PROPER ERROR MESSAGE')
     def get_user(self, chat_id):
@@ -115,6 +118,12 @@ show -     Mostrar <tarefas|horarios|notas>
                     else: self.safe_send(chat_id, horarios)
                 else:
                     self.safe_send(chat_id, '/fetch <materias|horarios|notas')
+        elif text.startswith('/add'): 
+            what = text.replace('/add ','')
+            with open('additions.log', 'a') as f:
+                f.write(what)
+            response = 'valeu eh nois'
+            self.safe_send(chat_id, response)
         elif text.startswith('/show'):  # tarefas, materias, horarios, notas
             try:
                 what = text.replace('/show ','')

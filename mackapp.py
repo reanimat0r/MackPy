@@ -226,13 +226,11 @@ class Mackenzie():
         return self._clone_notas()
 
     def get_novas_tarefas(self):
-        old_tarefas = [str(t) for t in self._clone_tarefas()]
-        new_tarefas = [str(t) for t in self.get_tarefas(fetch=True)]
-        old_tarefas_aux = old_tarefas[:]
-        new_tarefas_aux = new_tarefas[:]
+        old_tarefas = self._clone_tarefas()
+        new_tarefas = self.get_tarefas(fetch=True)
         diff = list(set(old_tarefas) - set(new_tarefas))
         if diff:
-            return new_tarefas
+            return jsonify(diff)
             
     def _extract_horarios(self, html): # passing 
         if not self.login_status['tia']: self.login_tia() 
