@@ -25,10 +25,12 @@ class RequestHandler(threading.Thread):
             while True:
                 d = datetime.datetime.now()
                 for user in users_table:
+                    print(user[1])
                     if user[3] and not d.hour % user[3] and d.minute == 0 and d.second < 5:
                         mack = Mackenzie(self.con, *user[1:3])
                         novas = mack.get_novas_tarefas()
                         if novas: self.safe_send(user[0], novas)
+                    time.sleep(10)
         users_table = self.cursor.execute('SELECT chat_id,tia,pwd,tarefas_interval FROM users').fetchall()
         threading.Thread(target=send_alerts, args=[users_table]).start()
         try: self.bot = telepot.Bot(os.environ['MACK_BOT_TOKEN'])
@@ -118,10 +120,16 @@ show -     Mostrar <tarefas|horarios|notas>
                     else: self.safe_send(chat_id, horarios)
                 else:
                     self.safe_send(chat_id, '/fetch <materias|horarios|notas')
+        elif text == '/tarefas': # alias
+            msg['text'] = '/fetch tarefas'
+            self._telepot_callback(msg)
+        elif text == '/horarios': # alias
+            msg['text'] = '/show horarios'
+            self._telepot_callback(msg)
         elif text.startswith('/add'): 
             what = text.replace('/add ','')
             with open('additions.log', 'a') as f:
-                f.write(what)
+                f.write(chat_id + ': ' + what + '\n')
             response = 'valeu eh nois'
             self.safe_send(chat_id, response)
         elif text.startswith('/show'):  # tarefas, materias, horarios, notas
@@ -158,6 +166,7 @@ show -     Mostrar <tarefas|horarios|notas>
                 self.cursor.execute('UPDATE users SET tarefas_interval = ? WHERE chat_id = ?',[int(text[1:]), chat_id])
             else:
                 self.safe_send(chat_id, '/interval <fator_horas>')
+                self.safe_send(chat_id, 'Seu intervalo eh' + self.con.execute('SELECT tarefas_interval FROM users WHERE chat_id=?',[chat_id]).fetchone())
         else:
             friendly_help = re.sub('(?:{|}|\")|^\s+|^\t+|\'','',str(self.help).replace(',','\n').replace('  /','/'))
             self.safe_send(chat_id,friendly_help)

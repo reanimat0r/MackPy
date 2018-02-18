@@ -83,7 +83,7 @@ class Mackenzie():
         self.get_materias(fetch=fetch)
         tarefas = []
         for m in self.materias:
-                tarefas.extend(m.all_tarefas())
+            tarefas.extend(m.all_tarefas())
         return sorted(tarefas, key=lambda t: t.due_date)
 
     def update_materias(self):
@@ -100,7 +100,7 @@ class Mackenzie():
         tarefas = []
         for m in self.materias:
             tarefas.extend(m.all_tarefas())
-        return sorted(tarefas,key=lambda t: t.due_date)
+        return [t for t in sorted(tarefas,key=lambda t: t.due_date) if not 'Enviado' in t.info['Status de envio'] and not 'Avaliado' in t.info['Status de avaliacao']]
 
     def _diff_materias(self,materias1,materias2):
         report = ''
