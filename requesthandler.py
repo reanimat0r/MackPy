@@ -21,18 +21,20 @@ class RequestHandler(threading.Thread):
         self.con = sqlite3.connect(DEFAULT_SQLITE_FILE, check_same_thread=False)
         self.cursor = self.con.cursor()
         self.users = {}
-        def send_alerts(users_table): # constant alerts upon news
+        def send_alerts(): # constant alerts upon news
+            users_table = self.cursor.execute('SELECT chat_id,tia,pwd,tarefas_interval FROM users').fetchall()
             while True:
                 d = datetime.datetime.now()
                 for user in users_table:
-                    print(user[1])
-                    if user[3] and not d.hour % user[3] and d.minute == 0 and d.second < 5:
+                    if user[3] and not d.hour % user[3]:# and d.minute == 0 and d.second < 5:
+                        print('Routine check for',user[1])
                         mack = Mackenzie(self.con, *user[1:3])
                         novas = mack.get_novas_tarefas()
-                        if novas: self.safe_send(user[0], novas)
-                    time.sleep(10)
-        users_table = self.cursor.execute('SELECT chat_id,tia,pwd,tarefas_interval FROM users').fetchall()
-        threading.Thread(target=send_alerts, args=[users_table]).start()
+                        if novas:
+                            self.safe_send(user[0], 'Novas tarefas encontradas [BETA]: ')
+                            self.safe_send(user[0], '\n'.join(str(t) for t in novas))
+                    time.sleep(300)
+        threading.Thread(target=send_alerts, args=[]).start()
         try: self.bot = telepot.Bot(os.environ['MACK_BOT_TOKEN'])
         except: 
             print('\n'*30, 'CRIE A VARIAVEL DE AMBIENTE MACK_BOT_TOKEN com o token do seu bot', '\n'*30)
@@ -70,6 +72,7 @@ show -     Mostrar <tarefas|horarios|notas>
     def _telepot_callback(self, msg):
         chat_id = msg['chat']['id']
         text = msg['text']
+        print(chat_id, msg['text'])
         # do we need msg['from']['username']?
         if chat_id in self.pending:
             if chat_id not in self.users: self.users.update({chat_id: {}})
@@ -129,13 +132,14 @@ show -     Mostrar <tarefas|horarios|notas>
         elif text.startswith('/add'): 
             what = text.replace('/add ','')
             with open('additions.log', 'a') as f:
-                f.write(chat_id + ': ' + what + '\n')
+                f.write(str(chat_id) + ': ' + what + '\n')
             response = 'valeu eh nois'
             self.safe_send(chat_id, response)
         elif text.startswith('/show'):  # tarefas, materias, horarios, notas
             try:
                 what = text.replace('/show ','')
                 mack = Mackenzie(self.con, *self.get_user(chat_id))
+                response = ''
                 if what  == 'tarefas':
                     tarefas = mack.get_tarefas()
                     response = '\n'.join([str(t) for t in tarefas])

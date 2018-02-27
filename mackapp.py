@@ -86,11 +86,21 @@ class Mackenzie():
             tarefas.extend(m.all_tarefas())
         return sorted(tarefas, key=lambda t: t.due_date)
 
+    def get_novas_tarefas(self):
+        old_tarefas = self._clone_tarefas()
+        new_tarefas = self.get_tarefas(fetch=True)
+        #print('Novas tarefas', [str(t) for t in new_tarefas])
+        diff = list(set(new_tarefas) - set(old_tarefas))
+        if diff: return filter(diff)
+
     def update_materias(self):
         self.materias
 
     def _clone_materias(self):
-        le_json = self.con.cursor().execute('SELECT json FROM materia WHERE tia=?', [self.user]).fetchone()[0]
+        le_json = ''
+        try: le_json = self.con.cursor().execute('SELECT json FROM materia WHERE tia=?', [self.user]).fetchone()[0]
+        except:
+            self.materias = []
         try: self.materias = jsonpickle.decode(le_json)
         except Exception as e: print(e)
         return self.materias
@@ -100,7 +110,7 @@ class Mackenzie():
         tarefas = []
         for m in self.materias:
             tarefas.extend(m.all_tarefas())
-        return [t for t in sorted(tarefas,key=lambda t: t.due_date) if not 'Enviado' in t.info['Status de envio'] and not 'Avaliado' in t.info['Status de avaliacao']]
+        return [t for t in sorted(tarefas, key=lambda t: t.due_date)]
 
     def _diff_materias(self,materias1,materias2):
         report = ''
@@ -224,13 +234,6 @@ class Mackenzie():
             notas = self._extract_notas(self.session.get(self._tia_notas).text)
             return jsonify(notas)
         return self._clone_notas()
-
-    def get_novas_tarefas(self):
-        old_tarefas = self._clone_tarefas()
-        new_tarefas = self.get_tarefas(fetch=True)
-        diff = list(set(old_tarefas) - set(new_tarefas))
-        if diff:
-            return jsonify(diff)
             
     def _extract_horarios(self, html): # passing 
         if not self.login_status['tia']: self.login_tia() 
