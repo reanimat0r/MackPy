@@ -23,8 +23,7 @@ def parse_datetime_moodle(horario):
 			replace('Dez', 'Dec').\
 			split()[1:]), '%d-%b-%Y,-%H:%M')))
 def jsonify(o):
-	try: return json.dumps(o, indent=4)
-	except: [json.dumps(i, indent=4) for i in o]
+	return json.dumps(o, indent=4)
 
 def split_string(n, st):
 	lst = ['']

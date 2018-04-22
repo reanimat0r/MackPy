@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 from util import *
 import sqlite3
 import sys
@@ -5,6 +6,7 @@ import pickle
 import telepot
 import os
 import threading
+import logging
 from mackapp import *
 
 """
@@ -13,10 +15,10 @@ Implement
 
 
 """
+LOG = logging.getLogger(__name__)
 class RequestHandler(threading.Thread):
-    def __init__(self, verbose=True):
+    def __init__(self):
         threading.Thread.__init__(self)
-        self.verbose = verbose
         self.sessions = {} #chat_id:mack obj
         self.con = sqlite3.connect(DEFAULT_SQLITE_FILE, check_same_thread=False)
         self.cursor = self.con.cursor()
@@ -27,7 +29,7 @@ class RequestHandler(threading.Thread):
                 d = datetime.datetime.now()
                 for user in users_table:
                     if user[3] and not d.hour % user[3]:# and d.minute == 0 and d.second < 5:
-                        print('Routine check for',user[1])
+                        LOG.debug('Routine check for' + str(user[1]))
                         mack = Mackenzie(self.con, *user[1:3])
                         novas = mack.get_novas_tarefas()
                         if novas:
@@ -37,7 +39,7 @@ class RequestHandler(threading.Thread):
         threading.Thread(target=send_alerts, args=[]).start()
         try: self.bot = telepot.Bot(os.environ['MACK_BOT_TOKEN'])
         except: 
-            print('\n'*30, 'CRIE A VARIAVEL DE AMBIENTE MACK_BOT_TOKEN com o token do seu bot', '\n'*30)
+            LOG.error('\n'*30, 'CRIE A VARIAVEL DE AMBIENTE MACK_BOT_TOKEN com o token do seu bot', '\n'*30)
             sys.exit(0)
         self.pending = {}  # current awaited response (this can generate conflict between two users?)
         self.help = make_help('''
@@ -52,19 +54,18 @@ show -     Mostrar <tarefas|horarios|notas>
         if len(response) > 4096:
             messages = split_string(4096, response)
             for m in messages: self.safe_send(chat_id, m)
-        else:
-            self.bot.sendMessage(chat_id, response)
-#             print('TO {}: {}'.format(msg['from']['id'], response))
+        else: self.bot.sendMessage(chat_id, response)
+        LOG.debug('Sent message: ' + response + ' to ' + str(chat_id))
 
     def run(self):
-        print('Awaiting requests.')
+        LOG.debug('Awaiting requests.')
         self.bot.message_loop(self._telepot_callback, run_forever=True)
 
     def insert_new_user(self, chat_id, tia, pwd):
         try:
             self.cursor.execute('INSERT INTO users VALUES (?,?,?,\'\',0)',[chat_id,tia,pwd])
             self.con.commit()
-        except: print('PROPER ERROR MESSAGE')
+        except: LOG.error('PROPER ERROR MESSAGE')
     def get_user(self, chat_id):
         self.cursor.execute('SELECT tia,pwd FROM users WHERE chat_id=?', (chat_id,))
         return self.cursor.fetchone()
@@ -72,7 +73,7 @@ show -     Mostrar <tarefas|horarios|notas>
     def _telepot_callback(self, msg):
         chat_id = msg['chat']['id']
         text = msg['text']
-        print(chat_id, msg['text'])
+        LOG.debug(str(chat_id) + ' ' + msg['text'])
         # do we need msg['from']['username']?
         if chat_id in self.pending:
             if chat_id not in self.users: self.users.update({chat_id: {}})
@@ -119,6 +120,7 @@ show -     Mostrar <tarefas|horarios|notas>
                     self.safe_send(chat_id, 'Fetching horários')
                     mack = Mackenzie(self.con, *self.get_user(chat_id))
                     horarios = mack.get_horarios(fetch=True)
+                    LOG.debug(type(horarios))
                     if not horarios: self.safe_send(chat_id, '/fetch failed')
                     else: self.safe_send(chat_id, horarios)
                 else:
@@ -176,5 +178,5 @@ show -     Mostrar <tarefas|horarios|notas>
             self.safe_send(chat_id,friendly_help)
 
 if __name__  == '__main__':
-        rh = RequestHandler()
-        print(rh.help)
+        pass
+#         rh = RequestHandler()

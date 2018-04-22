@@ -1,3 +1,4 @@
+#!/usr/bin/python3
 import atexit
 import time
 import sys
@@ -16,12 +17,17 @@ from entities import Materia, Topico, Subtopico, Tarefa
 from util import *
 import jsonpickle
 from requesthandler import *
+import logging
 
 # ----------------------------------------------------
 #                       SETUP
 # ----------------------------------------------------
 signal.signal(signal.SIGINT | signal.SIGKILL, exit_gracefully)  # does OR gating work in this scenario?
-DEFAULT_SQLITE_FILE = 'mack.sqlite'
+LOG_FILE='mackapp.log'
+LOG_FORMAT = "%(levelname)s %(name)s %(asctime)s - %(message)s" 
+logging.basicConfig(filename=LOG_FILE, level=logging.NOTSET, format=LOG_FORMAT, filemode='w')
+LOG = logging.getLogger()
+DEFAULT_SQLITE_FILE = './mack.sqlite'
 class Mackenzie():
     def __init__(self, con, user, pwd):
 #                 self.userdata_file = os.path.expanduser(userdata_file)
@@ -30,6 +36,7 @@ class Mackenzie():
 #                 except:
 #                         input('CANNOT LOAD USERDATA')
 #                         self.userdata = {} # chat_id:tia,tia:materias,chat_id:materias / "In Python, dictionaries really store pointers to objects. That means that having two keys point to the same object will not create the object twice."
+            LOG.debug('Init Mack Access')
             self._moodle_home = 'https://moodle.mackenzie.br/moodle/'
             self._moodle_login = self._moodle_home + 'login/index.php?authldap_skipntlmsso=1'
             self._tia_home = 'https://www3.mackenzie.br/tia/'
@@ -69,29 +76,28 @@ class Mackenzie():
     # ----------------------------------------------------
     #                       MOODLE
     # ----------------------------------------------------
-    def login_moodle(self, v=True):
+    def login_moodle(self):
+        LOG.debug('logging in moodle for ' + str(self.user))
         self.logging_in_moodle = True
         #session_moodle = r1.cookies['MoodleSessionmoodle']
         res = self.session.post(self._moodle_login, data={'username': self.user, 'password': self.pwd}, headers={}, allow_redirects=True)
         res = self.session.get('https://moodle.mackenzie.br/moodle/login/index.php?testsession=25632')
         res = self.session.get('https://moodle.mackenzie.br/moodle/')
         self.login_status['moodle'] = 'Minhas Disciplinas/Cursos' in res.text
-        if v: print('Logged in.' if self.login_status['moodle'] else 'Could not log in.')
+        LOG.debug(str(self.user) + (' not' if not self.login_status['moodle'] else '') + ' logged in')
         return self.login_status['moodle']
 
     def get_tarefas(self, fetch=False):
         self.get_materias(fetch=fetch)
         tarefas = []
-        for m in self.materias:
-            tarefas.extend(m.all_tarefas())
+        for m in self.materias: tarefas.extend(m.all_tarefas())
         return sorted(tarefas, key=lambda t: t.due_date)
 
     def get_novas_tarefas(self):
         old_tarefas = self._clone_tarefas()
         new_tarefas = self.get_tarefas(fetch=True)
-        #print('Novas tarefas', [str(t) for t in new_tarefas])
         diff = list(set(new_tarefas) - set(old_tarefas))
-        if diff: return filter(diff)
+        if diff: return filter(lambda x: 'Avaliado' != x.info['Data de entrega'],diff)
 
     def update_materias(self):
         self.materias
@@ -99,17 +105,15 @@ class Mackenzie():
     def _clone_materias(self):
         le_json = ''
         try: le_json = self.con.cursor().execute('SELECT json FROM materia WHERE tia=?', [self.user]).fetchone()[0]
-        except:
-            self.materias = []
+        except: self.materias = []
         try: self.materias = jsonpickle.decode(le_json)
-        except Exception as e: print(e)
+        except Exception as e: LOG.exception(e)
         return self.materias
 
     def _clone_tarefas(self):
         self._clone_materias()
         tarefas = []
-        for m in self.materias:
-            tarefas.extend(m.all_tarefas())
+        for m in self.materias: tarefas.extend(m.all_tarefas())
         return [t for t in sorted(tarefas, key=lambda t: t.due_date)]
 
     def _diff_materias(self,materias1,materias2):
@@ -207,7 +211,8 @@ class Mackenzie():
     #                       TIA
     # ----------------------------------------------------
 
-    def login_tia(self, v=True):
+    def login_tia(self):
+        LOG.debug('logging in tia for ' + str(self.user))
         res = self.session.get(self._tia_index)
         token = list(set(html.fromstring(res.text).xpath("//input[@name='token']/@value")))[0]
         data = {'alumat': self.user, 'pass': self.pwd, 'token': token, 'unidade': '001'}
@@ -215,18 +220,19 @@ class Mackenzie():
         self.session.post(self._tia_verifica, data=data, headers=headers, allow_redirects=True)
         res = self.session.get(self._tia_index2).text
         self.login_status['tia'] = str(self.user) in res
-        if v: print('Entrou no TIA')
         if 'manuten' in res: raise Exception('MANUTENCAO')
+        LOG.debug(str(self.user) + (' not' if not self.login_status['tia'] else ' else ''') + ' logged in')
         return self.login_status['tia']
 
     def get_horarios(self, fetch=False):
         if fetch:
             if not self.login_status['tia']: self.login_tia()
             horarios = self._extract_horarios(self.session.get(self._tia_horarios).text)
+            LOG.debug(horarios)
             self.cursor.execute('INSERT OR REPLACE INTO horarios VALUES (?,?)', [self.user, jsonify(horarios)])
             self.con.commit()
             return jsonify(horarios).replace('}','').replace('{','').replace('"','').replace(',','')
-        return self._clone_horarios()
+        return self._clone_horarios().replace('}','').replace('{','').replace('"','').replace(',','')
 
     def get_notas(self, fetch=False):
         if not self.login_status['tia']: self.login_tia()
@@ -235,7 +241,7 @@ class Mackenzie():
             return jsonify(notas)
         return self._clone_notas()
             
-    def _extract_horarios(self, html): # passing 
+    def _extract_horarios(self, html): # not passing 
         if not self.login_status['tia']: self.login_tia() 
         refined = OrderedDict()
         dias = {0: 'Seg', 1: 'Ter', 2: 'Qua', 3: 'Qui', 4: 'Sex', 5: 'Sab'}
@@ -318,21 +324,15 @@ def process_args(args):
 def server_use(argv):
     argkv = process_args(argv)
     if 'h' in argkv:
-            print(mack._server_usage)
+            LOG.debug(mack._server_usage)
             return
     bot = RequestHandler()
     bot.start()
     bot.join()
 
-def test_materias():
-    con = sqlite3.connect(DEFAULT_SQLITE_FILE, check_same_thread=False)
-    mack = Mackenzie(con, 31417485,19960428)
-    mack.login_moodle(v=True)
-    print(mack.get_novas_tarefas())
-    
 def main(argv):
     server_use(argv)
-#     test_materias()
 
 if __name__ == '__main__':
     main(sys.argv)
+
