@@ -37,6 +37,7 @@ class RequestHandler(threading.Thread):
                             self.safe_send(user[0], '\n'.join(str(t) for t in novas))
                     time.sleep(300)
         threading.Thread(target=send_alerts, args=[]).start()
+        print(os.environ['MACK_BOT_TOKEN'])
         try: self.bot = telepot.Bot(os.environ['MACK_BOT_TOKEN'])
         except: 
             LOG.error('\n'*30, 'CRIE A VARIAVEL DE AMBIENTE MACK_BOT_TOKEN com o token do seu bot', '\n'*30)

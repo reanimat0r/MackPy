@@ -1,125 +1,32 @@
-DEBUG requesthandler 2018-04-21 22:43:49,225 - Awaiting requests.
-DEBUG urllib3.util.retry 2018-04-21 22:43:49,226 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
-DEBUG requesthandler 2018-04-21 22:43:49,226 - Routine check for31417485
-DEBUG urllib3.connectionpool 2018-04-21 22:43:49,226 - Starting new HTTPS connection (1): api.telegram.org
-DEBUG root 2018-04-21 22:43:49,226 - Init Mack Access
-DEBUG root 2018-04-21 22:43:49,235 - logging in moodle for 31417485
-INFO requests.packages.urllib3.connectionpool 2018-04-21 22:43:49,238 - Starting new HTTPS connection (1): moodle.mackenzie.br
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:49,880 - "POST /moodle/login/index.php?authldap_skipntlmsso=1 HTTP/1.1" 303 346
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:49,972 - "GET /moodle/login/index.php?testsession=25632 HTTP/1.1" 303 320
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:50,566 - "GET /moodle/ HTTP/1.1" 200 17060
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:50,614 - "GET /moodle/login/index.php?testsession=25632 HTTP/1.1" 303 320
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:51,089 - "GET /moodle/ HTTP/1.1" 200 17061
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:51,552 - "GET /moodle/ HTTP/1.1" 200 17060
-DEBUG root 2018-04-21 22:43:51,608 - 31417485 logged in
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:52,014 - "GET /moodle/ HTTP/1.1" 200 17061
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:52,362 - "GET /moodle/course/view.php?id=5444 HTTP/1.1" 200 17568
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:52,763 - "GET /moodle/course/view.php?id=5445 HTTP/1.1" 200 16861
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:53,172 - "GET /moodle/course/view.php?id=5342 HTTP/1.1" 200 19084
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:53,668 - "GET /moodle/mod/assign/view.php?id=103922 HTTP/1.1" 200 19517
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:54,120 - "GET /moodle/course/view.php?id=5335 HTTP/1.1" 200 17385
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:54,544 - "GET /moodle/course/view.php?id=5347 HTTP/1.1" 200 19189
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:54,966 - "GET /moodle/mod/assign/view.php?id=72957 HTTP/1.1" 200 18403
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:55,371 - "GET /moodle/mod/assign/view.php?id=72959 HTTP/1.1" 200 18470
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:55,792 - "GET /moodle/mod/assign/view.php?id=119976 HTTP/1.1" 200 17946
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:56,321 - "GET /moodle/course/view.php?id=5410 HTTP/1.1" 200 20656
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:56,783 - "GET /moodle/mod/assign/view.php?id=50167 HTTP/1.1" 200 19449
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:57,207 - "GET /moodle/mod/assign/view.php?id=68352 HTTP/1.1" 200 18889
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:57,633 - "GET /moodle/mod/assign/view.php?id=71059 HTTP/1.1" 200 19478
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:58,054 - "GET /moodle/mod/assign/view.php?id=88369 HTTP/1.1" 200 19722
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:58,523 - "GET /moodle/mod/assign/view.php?id=88371 HTTP/1.1" 200 19724
-DEBUG urllib3.connectionpool 2018-04-21 22:43:58,915 - https://api.telegram.org:443 "POST /bot463352607:AAFpDeAzgRJUlQc3LrBMao9MmyClHiJEKgY/getUpdates HTTP/1.1" 200 362
-DEBUG requesthandler 2018-04-21 22:43:58,916 - 255566841 /fetch horarios
-DEBUG urllib3.util.retry 2018-04-21 22:43:58,916 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:58,925 - "GET /moodle/mod/assign/view.php?id=103292 HTTP/1.1" 200 19033
-DEBUG urllib3.util.retry 2018-04-21 22:43:59,016 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
-DEBUG urllib3.connectionpool 2018-04-21 22:43:59,016 - Starting new HTTPS connection (2): api.telegram.org
-DEBUG urllib3.connectionpool 2018-04-21 22:43:59,262 - https://api.telegram.org:443 "POST /bot463352607:AAFpDeAzgRJUlQc3LrBMao9MmyClHiJEKgY/sendMessage HTTP/1.1" 200 257
-DEBUG requesthandler 2018-04-21 22:43:59,262 - Sent message: Fetching horários to 255566841
-DEBUG root 2018-04-21 22:43:59,262 - Init Mack Access
-DEBUG root 2018-04-21 22:43:59,263 - logging in tia for 31417485
-INFO requests.packages.urllib3.connectionpool 2018-04-21 22:43:59,264 - Starting new HTTPS connection (1): www3.mackenzie.br
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:59,336 - "GET /moodle/mod/assign/view.php?id=97392 HTTP/1.1" 200 19097
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:59,367 - "GET /tia/index.php HTTP/1.1" 200 5847
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:59,589 - "POST /tia/verifica.php HTTP/1.1" 200 1222
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:59,776 - "GET /moodle/mod/assign/view.php?id=128854 HTTP/1.1" 200 18464
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:43:59,929 - "GET /tia/index2.php HTTP/1.1" 200 None
-DEBUG root 2018-04-21 22:43:59,938 - 31417485 else  logged in
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:44:00,223 - "GET /moodle/course/view.php?id=5355 HTTP/1.1" 200 16460
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:44:00,290 - "GET /tia/horarChamada.php HTTP/1.1" 200 None
-DEBUG root 2018-04-21 22:44:00,351 - OrderedDict([('Segunda', OrderedDict([('07:30', 'PROJETOS EMPREENDEDORES 06G Predio 31 Sala 405'), ('08:20', 'PROJETOS EMPREENDEDORES 06G Predio 31 Sala 405'), ('09:20', 'PRINCIPIOS DE EMPREENDEDORISMO 05G Predio 33 Sala 104'), ('10:10', 'PRINCIPIOS DE EMPREENDEDORISMO 05G Predio 33 Sala 104')])), ('Terca', OrderedDict([('07:30', 'MODELAGEM MATEMATICA II 04G11 Predio 31 Sala 405'), ('08:20', 'MODELAGEM MATEMATICA II 04G11 Predio 31 Sala 405'), ('09:20', 'MODELAGEM MATEMATICA II 04G Predio 31 Sala 203'), ('10:10', 'MODELAGEM MATEMATICA II 04G Predio 31 Sala 203')])), ('Quarta', OrderedDict([('07:30', 'COMPUTACAO DISTRIBUIDA 06G Predio 31 Sala 405'), ('08:20', 'COMPUTACAO DISTRIBUIDA 06G Predio 31 Sala 405'), ('09:20', 'COMPUTACAO DISTRIBUIDA 06G11 Predio 31 Sala 302'), ('10:10', 'COMPUTACAO DISTRIBUIDA 06G11 Predio 31 Sala 302'), ('21:10', 'LINGUAGENS FORMAIS E AUTOMATOS 05N Predio 19 Sala 308')])), ('Quinta', OrderedDict([('21:10', 'LINGUAGENS FORMAIS E AUTOMATOS 05N Predio 19 Sala 301')])), ('Sexta', OrderedDict([('09:20', 'PARADIGMAS DE LING DE PROGRAMACAO 05G Predio 33 Sala 105'), ('10:10', 'PARADIGMAS DE LING DE PROGRAMACAO 05G Predio 33 Sala 105')])), ('Sabado', OrderedDict([('07:30', 'PARADIGMAS DE LING DE PROGRAMACAO 05G Predio OL Sala ONL'), ('08:20', 'PARADIGMAS DE LING DE PROGRAMACAO 05G Predio OL Sala ONL')]))])
-DEBUG requesthandler 2018-04-21 22:44:00,399 - <class 'str'>
-DEBUG urllib3.util.retry 2018-04-21 22:44:00,400 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
-DEBUG requests.packages.urllib3.connectionpool 2018-04-21 22:44:00,547 - "GET /moodle/course/view.php?id=5360 HTTP/1.1" 200 16431
-DEBUG urllib3.connectionpool 2018-04-21 22:44:00,752 - https://api.telegram.org:443 "POST /bot463352607:AAFpDeAzgRJUlQc3LrBMao9MmyClHiJEKgY/sendMessage HTTP/1.1" 200 1548
-DEBUG requesthandler 2018-04-21 22:44:00,752 - Sent message: 
-    Segunda: 
-        07:30: PROJETOS EMPREENDEDORES 06G Predio 31 Sala 405
-        08:20: PROJETOS EMPREENDEDORES 06G Predio 31 Sala 405
-        09:20: PRINCIPIOS DE EMPREENDEDORISMO 05G Predio 33 Sala 104
-        10:10: PRINCIPIOS DE EMPREENDEDORISMO 05G Predio 33 Sala 104
-    
-    Terca: 
-        07:30: MODELAGEM MATEMATICA II 04G11 Predio 31 Sala 405
-        08:20: MODELAGEM MATEMATICA II 04G11 Predio 31 Sala 405
-        09:20: MODELAGEM MATEMATICA II 04G Predio 31 Sala 203
-        10:10: MODELAGEM MATEMATICA II 04G Predio 31 Sala 203
-    
-    Quarta: 
-        07:30: COMPUTACAO DISTRIBUIDA 06G Predio 31 Sala 405
-        08:20: COMPUTACAO DISTRIBUIDA 06G Predio 31 Sala 405
-        09:20: COMPUTACAO DISTRIBUIDA 06G11 Predio 31 Sala 302
-        10:10: COMPUTACAO DISTRIBUIDA 06G11 Predio 31 Sala 302
-        21:10: LINGUAGENS FORMAIS E AUTOMATOS 05N Predio 19 Sala 308
-    
-    Quinta: 
-        21:10: LINGUAGENS FORMAIS E AUTOMATOS 05N Predio 19 Sala 301
-    
-    Sexta: 
-        09:20: PARADIGMAS DE LING DE PROGRAMACAO 05G Predio 33 Sala 105
-        10:10: PARADIGMAS DE LING DE PROGRAMACAO 05G Predio 33 Sala 105
-    
-    Sabado: 
-        07:30: PARADIGMAS DE LING DE PROGRAMACAO 05G Predio OL Sala ONL
-        08:20: PARADIGMAS DE LING DE PROGRAMACAO 05G Predio OL Sala ONL
-    
- to 255566841
-DEBUG urllib3.connectionpool 2018-04-21 22:44:03,323 - https://api.telegram.org:443 "POST /bot463352607:AAFpDeAzgRJUlQc3LrBMao9MmyClHiJEKgY/getUpdates HTTP/1.1" 200 356
-DEBUG requesthandler 2018-04-21 22:44:03,324 - 255566841 /horarios
-DEBUG requesthandler 2018-04-21 22:44:03,324 - 255566841 /show horarios
-DEBUG root 2018-04-21 22:44:03,325 - Init Mack Access
-DEBUG urllib3.util.retry 2018-04-21 22:44:03,325 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
-DEBUG urllib3.util.retry 2018-04-21 22:44:03,424 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
-DEBUG urllib3.connectionpool 2018-04-21 22:44:03,657 - https://api.telegram.org:443 "POST /bot463352607:AAFpDeAzgRJUlQc3LrBMao9MmyClHiJEKgY/sendMessage HTTP/1.1" 200 1548
-DEBUG requesthandler 2018-04-21 22:44:03,657 - Sent message: 
-    Quarta: 
-        09:20: COMPUTACAO DISTRIBUIDA 06G11 Predio 31 Sala 302
-        07:30: COMPUTACAO DISTRIBUIDA 06G Predio 31 Sala 405
-        08:20: COMPUTACAO DISTRIBUIDA 06G Predio 31 Sala 405
-        21:10: LINGUAGENS FORMAIS E AUTOMATOS 05N Predio 19 Sala 308
-        10:10: COMPUTACAO DISTRIBUIDA 06G11 Predio 31 Sala 302
-    
-    Segunda: 
-        09:20: PRINCIPIOS DE EMPREENDEDORISMO 05G Predio 33 Sala 104
-        07:30: PROJETOS EMPREENDEDORES 06G Predio 31 Sala 405
-        08:20: PROJETOS EMPREENDEDORES 06G Predio 31 Sala 405
-        10:10: PRINCIPIOS DE EMPREENDEDORISMO 05G Predio 33 Sala 104
-    
-    Quinta: 
-        21:10: LINGUAGENS FORMAIS E AUTOMATOS 05N Predio 19 Sala 301
-    
-    Sexta: 
-        09:20: PARADIGMAS DE LING DE PROGRAMACAO 05G Predio 33 Sala 105
-        10:10: PARADIGMAS DE LING DE PROGRAMACAO 05G Predio 33 Sala 105
-    
-    Sabado: 
-        07:30: PARADIGMAS DE LING DE PROGRAMACAO 05G Predio OL Sala ONL
-        08:20: PARADIGMAS DE LING DE PROGRAMACAO 05G Predio OL Sala ONL
-    
-    Terca: 
-        09:20: MODELAGEM MATEMATICA II 04G Predio 31 Sala 203
-        07:30: MODELAGEM MATEMATICA II 04G11 Predio 31 Sala 405
-        08:20: MODELAGEM MATEMATICA II 04G11 Predio 31 Sala 405
-        10:10: MODELAGEM MATEMATICA II 04G Predio 31 Sala 203
-    
- to 255566841
+DEBUG requesthandler 2018-04-26 22:29:35,228 - Awaiting requests.
+DEBUG urllib3.util.retry 2018-04-26 22:29:35,228 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG requesthandler 2018-04-26 22:29:35,274 - Routine check for31417485
+DEBUG urllib3.connectionpool 2018-04-26 22:29:35,274 - Starting new HTTPS connection (1): api.telegram.org
+DEBUG root 2018-04-26 22:29:35,274 - Init Mack Access
+DEBUG root 2018-04-26 22:29:35,285 - logging in moodle for 31417485
+INFO requests.packages.urllib3.connectionpool 2018-04-26 22:29:35,288 - Starting new HTTPS connection (1): moodle.mackenzie.br
+DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:35,993 - "POST /moodle/login/index.php?authldap_skipntlmsso=1 HTTP/1.1" 303 346
+DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:36,091 - "GET /moodle/login/index.php?testsession=25632 HTTP/1.1" 303 320
+DEBUG urllib3.connectionpool 2018-04-26 22:29:36,515 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 352
+DEBUG requesthandler 2018-04-26 22:29:36,515 - 255566841 /help
+DEBUG urllib3.util.retry 2018-04-26 22:29:36,516 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.util.retry 2018-04-26 22:29:36,615 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-04-26 22:29:36,616 - Starting new HTTPS connection (2): api.telegram.org
+DEBUG urllib3.connectionpool 2018-04-26 22:29:36,967 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/sendMessage HTTP/1.1" 200 751
+DEBUG requesthandler 2018-04-26 22:29:36,967 - Sent message: /add:               Sugira uma funcao
+ /show:             Mostrar <tarefas|horarios|notas>
+ /interval:         alterar intervalo entre checagem de tarefas
+ /fetch:           Descobrir novas postagens <tarefas|horarios|notas>
+ /start:           Processo de autenticacao to 255566841
+DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:37,045 - "GET /moodle/ HTTP/1.1" 200 17135
+DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:37,099 - "GET /moodle/login/index.php?testsession=25632 HTTP/1.1" 303 320
+DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:37,675 - "GET /moodle/ HTTP/1.1" 200 17136
+DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:38,194 - "GET /moodle/ HTTP/1.1" 200 17136
+DEBUG root 2018-04-26 22:29:38,213 - 31417485 logged in
+DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:38,639 - "GET /moodle/ HTTP/1.1" 200 17133
+DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:39,041 - "GET /moodle/course/view.php?id=5444 HTTP/1.1" 200 17604
+DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:39,436 - "GET /moodle/course/view.php?id=5445 HTTP/1.1" 200 16912
+DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:39,854 - "GET /moodle/course/view.php?id=5342 HTTP/1.1" 200 19338
+DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:40,334 - "GET /moodle/mod/assign/view.php?id=103922 HTTP/1.1" 200 19614
+DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:40,821 - "GET /moodle/course/view.php?id=5335 HTTP/1.1" 200 17416
+DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:41,302 - "GET /moodle/course/view.php?id=5347 HTTP/1.1" 200 19383

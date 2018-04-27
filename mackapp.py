@@ -27,7 +27,7 @@ LOG_FILE='mackapp.log'
 LOG_FORMAT = "%(levelname)s %(name)s %(asctime)s - %(message)s" 
 logging.basicConfig(filename=LOG_FILE, level=logging.NOTSET, format=LOG_FORMAT, filemode='w')
 LOG = logging.getLogger()
-DEFAULT_SQLITE_FILE = './mack.sqlite'
+DEFAULT_SQLITE_FILE = 'mack.sqlite'
 class Mackenzie():
     def __init__(self, con, user, pwd):
 #                 self.userdata_file = os.path.expanduser(userdata_file)
@@ -97,7 +97,7 @@ class Mackenzie():
         old_tarefas = self._clone_tarefas()
         new_tarefas = self.get_tarefas(fetch=True)
         diff = list(set(new_tarefas) - set(old_tarefas))
-        if diff: return filter(lambda x: 'Avaliado' != x.info['Data de entrega'],diff)
+        if diff: return filter(lambda x: any([ s in x.info['Data de entrega'] for s in ['Avaliado', 'Enviado']]),diff)
 
     def update_materias(self):
         self.materias
