@@ -1,8 +1,3 @@
-CREATE TABLE `horarios` (
-	`tia`			INTEGER NOT NULL UNIQUE,
-	`json`	TEXT,
-	FOREIGN KEY(tia) REFERENCES users(tia)
-)
 CREATE TABLE `users` (
 	`chat_id`	TEXT NOT NULL UNIQUE,
 	`tia`	INTEGER NOT NULL UNIQUE,
@@ -11,8 +6,18 @@ CREATE TABLE `users` (
     `tarefas_interval` INTEGER,
 	PRIMARY KEY(chat_id,tia)
 );
+CREATE TABLE `horarios` (
+	`tia`			INTEGER NOT NULL UNIQUE,
+	`json`	TEXT,
+	FOREIGN KEY(tia) REFERENCES users(tia)
+);
 CREATE TABLE materia(
 	tia INTEGER PRIMARY KEY,
 	json TEXT,
+	FOREIGN KEY(tia) REFERENCES users(tia)
+);
+CREATE TABLE nota(
+	tia INTEGER PRIMARY KEY,
+    json TEXT,    
 	FOREIGN KEY(tia) REFERENCES users(tia)
 );

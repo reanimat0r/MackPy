@@ -24,20 +24,20 @@ class RequestHandler(threading.Thread):
         self.cursor = self.con.cursor()
         self.users = {}
         def send_alerts(): # constant alerts upon news
-            users_table = self.cursor.execute('SELECT chat_id,tia,pwd,tarefas_interval FROM users').fetchall()
+            users_table = self.cursor.execute('SELECT chat_id,tia,pwd,tarefas_interval FROM user').fetchall()
             while True:
                 d = datetime.datetime.now()
                 for user in users_table:
                     if user[3] and not d.hour % user[3]:# and d.minute == 0 and d.second < 5:
-                        LOG.debug('Routine check for' + str(user[1]))
+                        LOG.debug('Routine check for ' + str(user[1]))
                         mack = Mackenzie(self.con, *user[1:3])
                         novas = mack.get_novas_tarefas()
-                        if novas:
+                        novas_msg = '\n'.join(str(t) for t in novas) 
+                        if len(novas_msg) > 0:
                             self.safe_send(user[0], 'Novas tarefas encontradas [BETA]: ')
-                            self.safe_send(user[0], '\n'.join(str(t) for t in novas))
+                            self.safe_send(user[0], novas_msg)
                     time.sleep(300)
         threading.Thread(target=send_alerts, args=[]).start()
-        print(os.environ['MACK_BOT_TOKEN'])
         try: self.bot = telepot.Bot(os.environ['MACK_BOT_TOKEN'])
         except: 
             LOG.error('\n'*30, 'CRIE A VARIAVEL DE AMBIENTE MACK_BOT_TOKEN com o token do seu bot', '\n'*30)
@@ -52,6 +52,7 @@ show -     Mostrar <tarefas|horarios|notas>
         ''') # Ctrl+C,Ctrl+V@BotFather
 
     def safe_send(self, chat_id, response):  # this mitigates telepot.exception.TelegramError: 'Bad Request: message is too long'
+        if not response: return
         if len(response) > 4096:
             messages = split_string(4096, response)
             for m in messages: self.safe_send(chat_id, m)
@@ -62,9 +63,9 @@ show -     Mostrar <tarefas|horarios|notas>
         LOG.debug('Awaiting requests.')
         self.bot.message_loop(self._telepot_callback, run_forever=True)
 
-    def insert_new_user(self, chat_id, tia, pwd):
+    def insert_new_user(self, chat_id, tia, pwd, username, interval=0):
         try:
-            self.cursor.execute('INSERT INTO users VALUES (?,?,?,\'\',0)',[chat_id,tia,pwd])
+            self.cursor.execute('INSERT INTO users VALUES (?,?,?,?,?,?)',[chat_id,tia,pwd,'',interval,username])
             self.con.commit()
         except: LOG.error('PROPER ERROR MESSAGE')
     def get_user(self, chat_id):
@@ -75,7 +76,7 @@ show -     Mostrar <tarefas|horarios|notas>
         chat_id = msg['chat']['id']
         text = msg['text']
         LOG.debug(str(chat_id) + ' ' + msg['text'])
-        # do we need msg['from']['username']?
+        username = msg['from']['username'] if 'from' in msg and 'username' in msg['from'] else ''
         if chat_id in self.pending:
             if chat_id not in self.users: self.users.update({chat_id: {}})
             self.users[chat_id][self.pending[chat_id]] = text
@@ -89,7 +90,7 @@ show -     Mostrar <tarefas|horarios|notas>
         elif text == '/start':
             self.safe_send(chat_id, 'Insira TIA')
             self.pending[chat_id] = 'tia'
-        elif text == '/when':
+        elif text == '/last':
             self.cursor.execute('SELECT last_refresh FROM users WHERE chat_id=?',[chat_id])
             self.safe_send(chat_id,self.cursor.fetchone()) 
         elif '/fetch' in text:

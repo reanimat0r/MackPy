@@ -1,32 +1,3 @@
-DEBUG requesthandler 2018-04-26 22:29:35,228 - Awaiting requests.
-DEBUG urllib3.util.retry 2018-04-26 22:29:35,228 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
-DEBUG requesthandler 2018-04-26 22:29:35,274 - Routine check for31417485
-DEBUG urllib3.connectionpool 2018-04-26 22:29:35,274 - Starting new HTTPS connection (1): api.telegram.org
-DEBUG root 2018-04-26 22:29:35,274 - Init Mack Access
-DEBUG root 2018-04-26 22:29:35,285 - logging in moodle for 31417485
-INFO requests.packages.urllib3.connectionpool 2018-04-26 22:29:35,288 - Starting new HTTPS connection (1): moodle.mackenzie.br
-DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:35,993 - "POST /moodle/login/index.php?authldap_skipntlmsso=1 HTTP/1.1" 303 346
-DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:36,091 - "GET /moodle/login/index.php?testsession=25632 HTTP/1.1" 303 320
-DEBUG urllib3.connectionpool 2018-04-26 22:29:36,515 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 352
-DEBUG requesthandler 2018-04-26 22:29:36,515 - 255566841 /help
-DEBUG urllib3.util.retry 2018-04-26 22:29:36,516 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
-DEBUG urllib3.util.retry 2018-04-26 22:29:36,615 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
-DEBUG urllib3.connectionpool 2018-04-26 22:29:36,616 - Starting new HTTPS connection (2): api.telegram.org
-DEBUG urllib3.connectionpool 2018-04-26 22:29:36,967 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/sendMessage HTTP/1.1" 200 751
-DEBUG requesthandler 2018-04-26 22:29:36,967 - Sent message: /add:               Sugira uma funcao
- /show:             Mostrar <tarefas|horarios|notas>
- /interval:         alterar intervalo entre checagem de tarefas
- /fetch:           Descobrir novas postagens <tarefas|horarios|notas>
- /start:           Processo de autenticacao to 255566841
-DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:37,045 - "GET /moodle/ HTTP/1.1" 200 17135
-DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:37,099 - "GET /moodle/login/index.php?testsession=25632 HTTP/1.1" 303 320
-DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:37,675 - "GET /moodle/ HTTP/1.1" 200 17136
-DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:38,194 - "GET /moodle/ HTTP/1.1" 200 17136
-DEBUG root 2018-04-26 22:29:38,213 - 31417485 logged in
-DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:38,639 - "GET /moodle/ HTTP/1.1" 200 17133
-DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:39,041 - "GET /moodle/course/view.php?id=5444 HTTP/1.1" 200 17604
-DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:39,436 - "GET /moodle/course/view.php?id=5445 HTTP/1.1" 200 16912
-DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:39,854 - "GET /moodle/course/view.php?id=5342 HTTP/1.1" 200 19338
-DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:40,334 - "GET /moodle/mod/assign/view.php?id=103922 HTTP/1.1" 200 19614
-DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:40,821 - "GET /moodle/course/view.php?id=5335 HTTP/1.1" 200 17416
-DEBUG requests.packages.urllib3.connectionpool 2018-04-26 22:29:41,302 - "GET /moodle/course/view.php?id=5347 HTTP/1.1" 200 19383
+DEBUG requesthandler 2018-05-14 21:25:45,530 - Awaiting requests.
+DEBUG urllib3.util.retry 2018-05-14 21:25:45,531 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-05-14 21:25:45,531 - Starting new HTTPS connection (1): api.telegram.org

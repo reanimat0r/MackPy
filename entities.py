@@ -90,7 +90,7 @@ class Subtopico:
 
 class Tarefa:
         def __init__(self, tarefa_name, tarefa_desc):
-            self.info = {'Título':tarefa_name, 'Descrição':tarefa_desc} # reconsiderar esta merda toda
+            self.info = OrderedDict({'Título':tarefa_name, 'Descrição':tarefa_desc[:140] if len(tarefa_desc) > 140 else tarefa_desc}) # reconsiderar esta merda toda
             self.due_date = None
             self.link = None
 

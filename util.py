@@ -43,3 +43,9 @@ def make_help(commands):
             c,desc = c.split(' - ')
             help.update({'/'+c:'        '+desc})
     return help
+
+if __name__ == '__main__':
+    dt_moodle = parse_datetime_moodle('sexta, 4 Jan 2018, 23:00')
+    print(dt_moodle)
+    print(datetime.datetime.now())
+    print(dt_moodle > datetime.datetime.now())

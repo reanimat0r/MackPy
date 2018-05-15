@@ -25,7 +25,7 @@ import logging
 signal.signal(signal.SIGINT | signal.SIGKILL, exit_gracefully)  # does OR gating work in this scenario?
 LOG_FILE='mackapp.log'
 LOG_FORMAT = "%(levelname)s %(name)s %(asctime)s - %(message)s" 
-logging.basicConfig(filename=LOG_FILE, level=logging.NOTSET, format=LOG_FORMAT, filemode='w')
+logging.basicConfig(filename=LOG_FILE, level=logging.DEBUG, format=LOG_FORMAT, filemode='w')
 LOG = logging.getLogger()
 DEFAULT_SQLITE_FILE = 'mack.sqlite'
 class Mackenzie():
@@ -91,13 +91,17 @@ class Mackenzie():
         self.get_materias(fetch=fetch)
         tarefas = []
         for m in self.materias: tarefas.extend(m.all_tarefas())
-        return sorted(tarefas, key=lambda t: t.due_date)
+        sorted_tarefas = sorted(tarefas, key=lambda t: t.due_date)
+        return sorted_tarefas
 
     def get_novas_tarefas(self):
         old_tarefas = self._clone_tarefas()
         new_tarefas = self.get_tarefas(fetch=True)
         diff = list(set(new_tarefas) - set(old_tarefas))
-        if diff: return filter(lambda x: any([ s in x.info['Data de entrega'] for s in ['Avaliado', 'Enviado']]),diff)
+        filtro = lambda x: 'Avaliado' not in x.info['Status da avaliação'] and 'nviado' not in x.info['Status da avaliação'] and parse_datetime_moodle(x.info['Data de entrega']) > datetime.datetime.now()
+        filtered_diff = filter(filtro, diff)
+        return filtered_diff
+
 
     def update_materias(self):
         self.materias
@@ -127,12 +131,13 @@ class Mackenzie():
         return report           
 
     def _clone_notas(self):
-        le_json = self.con.cursor().execute('SELECT json FROM notas WHERE tia=?', [self.user]).fetchone()[0]
+        le_json = self.con.cursor().execute('SELECT json FROM nota WHERE tia=?', [self.user]).fetchone()[0]
+        LOG.info('Clone notas para ' + self.user + '\n\n' + le_json)
         self.notas = json.loads(le_json)
         return self.notas
 
     def _clone_horarios(self):
-        le_json = self.con.cursor().execute('SELECT json FROM horarios WHERE tia=?', [self.user]).fetchone()[0]
+        le_json = self.con.cursor().execute('SELECT json FROM horario WHERE tia=?', [self.user]).fetchone()[0]
         if le_json: self.horarios = jsonify(json.loads(le_json))
         else: self.horarios = None 
         return self.horarios
@@ -142,7 +147,7 @@ class Mackenzie():
         if fetch: 
             self.materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)
             self.cursor.execute('INSERT OR REPLACE INTO materia VALUES(?,?)', [self.user, jsonpickle.encode(self.materias)])
-            self.cursor.execute('UPDATE users SET last_refresh=? WHERE tia=?', [time.strftime('%d/%m/%Y %H:%M'), self.user])
+            self.cursor.execute('UPDATE user SET last_refresh=? WHERE tia=?', [time.strftime('%d/%m/%Y %H:%M'), self.user])
             self.con.commit()
         else: self._clone_materias()
         return self.materias
@@ -185,6 +190,7 @@ class Mackenzie():
                         if sub_topic_type == 'Tarefa':
                             tarefa_page = BeautifulSoup(self.session.get(sub_topic_link).text, 'lxml')
                             tarefa_name = tarefa_page.find_all('h2')[0].text
+                            LOG.debug('Acquiring tarefa: ' + tarefa_name)
                             tarefa_desc = tarefa_page.find_all('div', attrs={'id':'intro'})[0].text
                             tarefa_table = tarefa_page.find_all('table', class_='generaltable')[0]
                             tds = tarefa_table.find_all('td')
@@ -229,7 +235,7 @@ class Mackenzie():
             if not self.login_status['tia']: self.login_tia()
             horarios = self._extract_horarios(self.session.get(self._tia_horarios).text)
             LOG.debug(horarios)
-            self.cursor.execute('INSERT OR REPLACE INTO horarios VALUES (?,?)', [self.user, jsonify(horarios)])
+            self.cursor.execute('INSERT OR REPLACE INTO horario VALUES (?,?)', [self.user, jsonify(horarios)])
             self.con.commit()
             return jsonify(horarios).replace('}','').replace('{','').replace('"','').replace(',','')
         return self._clone_horarios().replace('}','').replace('{','').replace('"','').replace(',','')
@@ -238,7 +244,7 @@ class Mackenzie():
         if not self.login_status['tia']: self.login_tia()
         if fetch:
             notas = self._extract_notas(self.session.get(self._tia_notas).text)
-            return jsonify(notas)
+            self.cursor.execute('INSERT OR REPLACE INTO notas VALUES (?,?)', [self.user, jsonify(notas)])
         return self._clone_notas()
             
     def _extract_horarios(self, html): # not passing 
