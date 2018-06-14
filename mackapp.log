@@ -106,3 +106,443 @@ DEBUG requesthandler 2018-06-14 01:13:17,805 - Sent message: /interval:         
  /show:             Mostrar <tarefas|horarios|notas>
  /fetch:           Descobrir novas postagens <tarefas|horarios|notas>
  /start:           Processo de autenticacao to 290893814
+DEBUG urllib3.connectionpool 2018-06-14 01:13:37,779 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:13:37,880 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:13:58,076 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:13:58,177 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:14:18,375 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:14:18,475 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:14:38,673 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:14:38,774 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:14:58,970 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:14:59,071 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:15:19,267 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:15:19,368 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG requesthandler 2018-06-14 01:15:28,206 - Routine check for 41527968
+DEBUG root 2018-06-14 01:15:28,206 - Init Mack Access
+DEBUG root 2018-06-14 01:15:28,211 - logging in moodle for 41527968
+DEBUG urllib3.connectionpool 2018-06-14 01:15:28,213 - Starting new HTTPS connection (1): moodle.mackenzie.br
+DEBUG urllib3.connectionpool 2018-06-14 01:15:28,630 - https://moodle.mackenzie.br:443 "POST /moodle/login/index.php?authldap_skipntlmsso=1 HTTP/1.1" 303 346
+DEBUG urllib3.connectionpool 2018-06-14 01:15:28,719 - https://moodle.mackenzie.br:443 "GET /moodle/login/index.php?testsession=18071 HTTP/1.1" 303 320
+DEBUG urllib3.connectionpool 2018-06-14 01:15:29,031 - https://moodle.mackenzie.br:443 "GET /moodle/ HTTP/1.1" 200 16116
+DEBUG urllib3.connectionpool 2018-06-14 01:15:29,148 - https://moodle.mackenzie.br:443 "GET /moodle/login/index.php?testsession=25632 HTTP/1.1" 200 10166
+DEBUG urllib3.connectionpool 2018-06-14 01:15:29,330 - https://moodle.mackenzie.br:443 "GET /moodle/ HTTP/1.1" 200 16120
+DEBUG root 2018-06-14 01:15:29,344 - 41527968 logged in
+DEBUG urllib3.connectionpool 2018-06-14 01:15:29,508 - https://moodle.mackenzie.br:443 "GET /moodle/ HTTP/1.1" 200 16122
+DEBUG urllib3.connectionpool 2018-06-14 01:15:29,807 - https://moodle.mackenzie.br:443 "GET /moodle/course/view.php?id=3018 HTTP/1.1" 200 19838
+DEBUG urllib3.connectionpool 2018-06-14 01:15:30,266 - https://moodle.mackenzie.br:443 "GET /moodle/course/view.php?id=2999 HTTP/1.1" 200 17864
+DEBUG urllib3.connectionpool 2018-06-14 01:15:30,642 - https://moodle.mackenzie.br:443 "GET /moodle/course/view.php?id=3220 HTTP/1.1" 200 17241
+DEBUG urllib3.connectionpool 2018-06-14 01:15:30,870 - https://moodle.mackenzie.br:443 "GET /moodle/course/view.php?id=2938 HTTP/1.1" 200 16464
+DEBUG urllib3.connectionpool 2018-06-14 01:15:31,127 - https://moodle.mackenzie.br:443 "GET /moodle/course/view.php?id=2845 HTTP/1.1" 200 17335
+DEBUG urllib3.connectionpool 2018-06-14 01:15:31,370 - https://moodle.mackenzie.br:443 "GET /moodle/course/view.php?id=3153 HTTP/1.1" 200 16583
+DEBUG urllib3.connectionpool 2018-06-14 01:15:31,597 - https://moodle.mackenzie.br:443 "GET /moodle/course/view.php?id=3173 HTTP/1.1" 200 16408
+DEBUG urllib3.connectionpool 2018-06-14 01:15:39,565 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:15:39,665 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:15:59,864 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:15:59,965 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:16:20,162 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:16:20,262 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:16:40,460 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:16:40,561 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:17:00,757 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:17:00,858 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:17:21,067 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:17:21,167 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:17:41,367 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:17:41,468 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:18:01,665 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:18:01,766 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:18:21,963 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:18:22,064 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:18:42,260 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:18:42,361 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:18:52,315 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 359
+DEBUG requesthandler 2018-06-14 01:18:52,316 - 255566841 /watch notas
+DEBUG root 2018-06-14 01:18:52,316 - Init Mack Access
+DEBUG root 2018-06-14 01:18:52,316 - logging in tia for 31417485
+DEBUG urllib3.connectionpool 2018-06-14 01:18:52,318 - Starting new HTTPS connection (1): www3.mackenzie.br
+DEBUG urllib3.connectionpool 2018-06-14 01:18:52,416 - https://www3.mackenzie.br:443 "GET /tia/index.php HTTP/1.1" 200 5847
+DEBUG urllib3.util.retry 2018-06-14 01:18:52,417 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:18:52,586 - https://www3.mackenzie.br:443 "POST /tia/verifica.php HTTP/1.1" 200 1222
+DEBUG urllib3.connectionpool 2018-06-14 01:18:52,759 - https://www3.mackenzie.br:443 "GET /tia/index2.php HTTP/1.1" 200 None
+DEBUG root 2018-06-14 01:18:52,761 - 31417485 else  logged in
+DEBUG urllib3.connectionpool 2018-06-14 01:18:52,909 - https://www3.mackenzie.br:443 "GET /tia/notasChamada.php HTTP/1.1" 200 None
+INFO root 2018-06-14 01:18:53,055 - Clone notas para 31417485
+
+{
+    "COMPUTACAO DISTRIBUIDA": {
+        "F": 6.2,
+        "A": 3.9,
+        "PARTIC": 0.0,
+        "MI": 6.4,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 3.2,
+        "NI1": 5.1,
+        "NI2": 7.7,
+        "B": 7.0,
+        "SUB": "2.5",
+        "H": NaN,
+        "J": NaN,
+        "id": "ENEX50147",
+        "G": 10.0
+    },
+    "LINGUAGENS FORMAIS E AUTOMATOS": {
+        "F": 3.3,
+        "A": 1.6,
+        "PARTIC": 0.6,
+        "MI": 4.3,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 2.1,
+        "NI1": 2.0,
+        "NI2": 2.3,
+        "B": 3.0,
+        "SUB": "5.1 NI1",
+        "H": NaN,
+        "J": NaN,
+        "id": "ENEX50604",
+        "G": NaN
+    },
+    "MODELAGEM MATEMATICA II": {
+        "F": 3.5,
+        "A": 4.1,
+        "PARTIC": 0.0,
+        "MI": 3.8,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 1.9,
+        "NI1": 4.1,
+        "NI2": 3.5,
+        "B": NaN,
+        "SUB": NaN,
+        "H": NaN,
+        "J": NaN,
+        "id": "ENEX50721",
+        "G": NaN
+    },
+    "PARADIGMAS DE LING DE PROGRAMACAO": {
+        "F": 7.4,
+        "A": 5.5,
+        "PARTIC": 0.4,
+        "MI": 6.8,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 3.4,
+        "NI1": 5.7,
+        "NI2": 6.1,
+        "B": 6.0,
+        "SUB": "6.8 NI1",
+        "H": 5.2,
+        "J": NaN,
+        "id": "ENEX50789",
+        "G": 5.8
+    },
+    "PRINCIPIOS DE EMPREENDEDORISMO": {
+        "F": 7.0,
+        "A": 6.0,
+        "PARTIC": 1.0,
+        "MI": 7.5,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 7.5,
+        "NI1": 6.0,
+        "NI2": 7.0,
+        "B": NaN,
+        "SUB": NaN,
+        "H": NaN,
+        "J": NaN,
+        "id": "ENUN51120",
+        "G": NaN
+    },
+    "PROJETOS EMPREENDEDORES": {
+        "F": NaN,
+        "A": 7.0,
+        "PARTIC": 1.0,
+        "MI": 8.0,
+        "D": NaN,
+        "PF": NaN,
+        "C": 7.0,
+        "I": NaN,
+        "E": NaN,
+        "MF": 8.0,
+        "NI1": NaN,
+        "NI2": NaN,
+        "B": 7.0,
+        "SUB": "A",
+        "H": NaN,
+        "J": NaN,
+        "id": "ENUN51121",
+        "G": NaN
+    }
+}
+DEBUG urllib3.connectionpool 2018-06-14 01:18:53,201 - https://www3.mackenzie.br:443 "GET /tia/notasChamada.php HTTP/1.1" 200 None
+INFO root 2018-06-14 01:18:53,282 - Clone notas para 31417485
+
+{
+    "COMPUTACAO DISTRIBUIDA": {
+        "F": 6.2,
+        "A": 3.9,
+        "PARTIC": 0.0,
+        "MI": 6.4,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 3.2,
+        "NI1": 5.1,
+        "NI2": 7.7,
+        "B": 7.0,
+        "SUB": "2.5",
+        "H": NaN,
+        "J": NaN,
+        "id": "ENEX50147",
+        "G": 10.0
+    },
+    "LINGUAGENS FORMAIS E AUTOMATOS": {
+        "F": 3.3,
+        "A": 1.6,
+        "PARTIC": 0.6,
+        "MI": 4.3,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 2.1,
+        "NI1": 2.0,
+        "NI2": 2.3,
+        "B": 3.0,
+        "SUB": "5.1 NI1",
+        "H": NaN,
+        "J": NaN,
+        "id": "ENEX50604",
+        "G": NaN
+    },
+    "MODELAGEM MATEMATICA II": {
+        "F": 3.5,
+        "A": 4.1,
+        "PARTIC": 0.0,
+        "MI": 3.8,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 1.9,
+        "NI1": 4.1,
+        "NI2": 3.5,
+        "B": NaN,
+        "SUB": NaN,
+        "H": NaN,
+        "J": NaN,
+        "id": "ENEX50721",
+        "G": NaN
+    },
+    "PARADIGMAS DE LING DE PROGRAMACAO": {
+        "F": 7.4,
+        "A": 5.5,
+        "PARTIC": 0.4,
+        "MI": 6.8,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 3.4,
+        "NI1": 5.7,
+        "NI2": 6.1,
+        "B": 6.0,
+        "SUB": "6.8 NI1",
+        "H": 5.2,
+        "J": NaN,
+        "id": "ENEX50789",
+        "G": 5.8
+    },
+    "PRINCIPIOS DE EMPREENDEDORISMO": {
+        "F": 7.0,
+        "A": 6.0,
+        "PARTIC": 1.0,
+        "MI": 7.5,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 7.5,
+        "NI1": 6.0,
+        "NI2": 7.0,
+        "B": NaN,
+        "SUB": NaN,
+        "H": NaN,
+        "J": NaN,
+        "id": "ENUN51120",
+        "G": NaN
+    },
+    "PROJETOS EMPREENDEDORES": {
+        "F": NaN,
+        "A": 7.0,
+        "PARTIC": 1.0,
+        "MI": 8.0,
+        "D": NaN,
+        "PF": NaN,
+        "C": 7.0,
+        "I": NaN,
+        "E": NaN,
+        "MF": 8.0,
+        "NI1": NaN,
+        "NI2": NaN,
+        "B": 7.0,
+        "SUB": "A",
+        "H": NaN,
+        "J": NaN,
+        "id": "ENUN51121",
+        "G": NaN
+    }
+}
+DEBUG urllib3.connectionpool 2018-06-14 01:19:12,614 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:19:12,714 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)
+DEBUG urllib3.connectionpool 2018-06-14 01:19:23,310 - Resetting dropped connection: www3.mackenzie.br
+DEBUG urllib3.connectionpool 2018-06-14 01:19:23,535 - https://www3.mackenzie.br:443 "GET /tia/notasChamada.php HTTP/1.1" 200 None
+INFO root 2018-06-14 01:19:23,637 - Clone notas para 31417485
+
+{
+    "COMPUTACAO DISTRIBUIDA": {
+        "F": 6.2,
+        "A": 3.9,
+        "PARTIC": 0.0,
+        "MI": 6.4,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 3.2,
+        "NI1": 5.1,
+        "NI2": 7.7,
+        "B": 7.0,
+        "SUB": "2.5",
+        "H": NaN,
+        "J": NaN,
+        "id": "ENEX50147",
+        "G": 10.0
+    },
+    "LINGUAGENS FORMAIS E AUTOMATOS": {
+        "F": 3.3,
+        "A": 1.6,
+        "PARTIC": 0.6,
+        "MI": 4.3,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 2.1,
+        "NI1": 2.0,
+        "NI2": 2.3,
+        "B": 3.0,
+        "SUB": "5.1 NI1",
+        "H": NaN,
+        "J": NaN,
+        "id": "ENEX50604",
+        "G": NaN
+    },
+    "MODELAGEM MATEMATICA II": {
+        "F": 3.5,
+        "A": 4.1,
+        "PARTIC": 0.0,
+        "MI": 3.8,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 1.9,
+        "NI1": 4.1,
+        "NI2": 3.5,
+        "B": NaN,
+        "SUB": NaN,
+        "H": NaN,
+        "J": NaN,
+        "id": "ENEX50721",
+        "G": NaN
+    },
+    "PARADIGMAS DE LING DE PROGRAMACAO": {
+        "F": 7.4,
+        "A": 5.5,
+        "PARTIC": 0.4,
+        "MI": 6.8,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 3.4,
+        "NI1": 5.7,
+        "NI2": 6.1,
+        "B": 6.0,
+        "SUB": "6.8 NI1",
+        "H": 5.2,
+        "J": NaN,
+        "id": "ENEX50789",
+        "G": 5.8
+    },
+    "PRINCIPIOS DE EMPREENDEDORISMO": {
+        "F": 7.0,
+        "A": 6.0,
+        "PARTIC": 1.0,
+        "MI": 7.5,
+        "D": NaN,
+        "PF": NaN,
+        "C": NaN,
+        "I": NaN,
+        "E": NaN,
+        "MF": 7.5,
+        "NI1": 6.0,
+        "NI2": 7.0,
+        "B": NaN,
+        "SUB": NaN,
+        "H": NaN,
+        "J": NaN,
+        "id": "ENUN51120",
+        "G": NaN
+    },
+    "PROJETOS EMPREENDEDORES": {
+        "F": NaN,
+        "A": 7.0,
+        "PARTIC": 1.0,
+        "MI": 8.0,
+        "D": NaN,
+        "PF": NaN,
+        "C": 7.0,
+        "I": NaN,
+        "E": NaN,
+        "MF": 8.0,
+        "NI1": NaN,
+        "NI2": NaN,
+        "B": 7.0,
+        "SUB": "A",
+        "H": NaN,
+        "J": NaN,
+        "id": "ENUN51121",
+        "G": NaN
+    }
+}
+DEBUG urllib3.connectionpool 2018-06-14 01:19:32,912 - https://api.telegram.org:443 "POST /bot463352607:AAF1hVBLHO5KuyEAecfl8YqgPmsgnGkPsZQ/getUpdates HTTP/1.1" 200 23
+DEBUG urllib3.util.retry 2018-06-14 01:19:33,012 - Converted retries value: 3 -> Retry(total=3, connect=None, read=None, redirect=0, status=None)

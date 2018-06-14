@@ -33,13 +33,8 @@ logging.basicConfig(filename=LOG_FILE, level=logging.DEBUG, format=LOG_FORMAT, f
 LOG = logging.getLogger()
 DEFAULT_SQLITE_FILE = os.path.join(os.getcwd(), 'mack.sqlite')
 class Mackenzie():
+
     def __init__(self, con, user, pwd):
-#                 self.userdata_file = os.path.expanduser(userdata_file)
-#                 try:
-#                         self.userdata = pickle.load(open(self.userdata_file, 'rb'))
-#                 except:
-#                         input('CANNOT LOAD USERDATA')
-#                         self.userdata = {} # chat_id:tia,tia:materias,chat_id:materias / "In Python, dictionaries really store pointers to objects. That means that having two keys point to the same object will not create the object twice."
             LOG.debug('Init Mack Access')
             self._moodle_home = 'https://moodle.mackenzie.br/moodle/'
             self._moodle_login = self._moodle_home + 'login/index.php?authldap_skipntlmsso=1'
@@ -56,26 +51,6 @@ class Mackenzie():
             self.user = user
             self.pwd = pwd
             self.login_status={'tia':False,'moodle':False}
-            self._usage = '''Mack App\n\nUsage: python3 mackapp.py [-g] [-m tia] [-p senha] [-i] [-h] [-v] targets\n
-                            Options:
-                                    -g      interface gráfica
-                                    -h              isto
-                                    -m              tia do aluno
-                                    -p              senha pre-configurada opcional
-                                    -i              modo interativo
-                                    -t      targets
-                                    -v      modo detalhado
-
-                            Exemplos: 
-                                    python3 mackapp.py -m 31417485
-
-                            target pode ser notas, horarios, tarefas no momento
-                    '''
-            self._server_usage = '''Mack App\n\nUsage: python3 mackapp.py -b [bot_id_info]\n
-                                            Options:
-                                                    -h              isto
-                                                    -i              modo interativo
-                                    '''
 
     # ----------------------------------------------------
     #                       MOODLE
@@ -106,7 +81,6 @@ class Mackenzie():
         filtered_diff = filter(filtro, diff)
         return filtered_diff
 
-
     def update_materias(self):
         self.materias
 
@@ -118,12 +92,6 @@ class Mackenzie():
         except Exception as e: LOG.exception(e)
         return self.materias
 
-    def _clone_tarefas(self):
-        self._clone_materias()
-        tarefas = []
-        for m in self.materias: tarefas.extend(m.all_tarefas())
-        return [t for t in sorted(tarefas, key=lambda t: t.due_date)]
-
     def _diff_materias(self,materias1,materias2):
         report = ''
         if len(materias1) != len(materias2):
@@ -133,18 +101,6 @@ class Mackenzie():
                 if materias1[i].name == materias2[i].name:
                     print([str(t) for t in materias1[i].all_tarefas()])
         return report           
-
-    def _clone_notas(self):
-        le_json = self.con.cursor().execute('SELECT json FROM nota WHERE tia=?', [self.user]).fetchone()[0]
-        LOG.info('Clone notas para ' + str(self.user) + '\n\n' + le_json)
-        self.notas = json.loads(le_json)
-        return self.notas
-
-    def _clone_horarios(self):
-        le_json = self.con.cursor().execute('SELECT json FROM horario WHERE tia=?', [self.user]).fetchone()[0]
-        if le_json: self.horarios = jsonify(json.loads(le_json))
-        else: self.horarios = None 
-        return self.horarios
 
     def get_materias(self, fetch=False, diff=False, v=True):
         if not self.login_status['moodle']: self.login_moodle()
@@ -220,7 +176,6 @@ class Mackenzie():
     # ----------------------------------------------------
     #                       TIA
     # ----------------------------------------------------
-
     def login_tia(self):
         LOG.debug('logging in tia for ' + str(self.user))
         res = self.session.get(self._tia_index)
@@ -234,6 +189,34 @@ class Mackenzie():
         LOG.debug(str(self.user) + (' not' if not self.login_status['tia'] else ' else ''') + ' logged in')
         return self.login_status['tia']
 
+    def get_notas(self, fetch=False):
+        if not self.login_status['tia']: self.login_tia()
+        if fetch:
+            notas = self._extract_notas(self.session.get(self._tia_notas).text)
+            self.cursor.execute('INSERT OR REPLACE INTO nota VALUES (?,?)', [self.user, jsonify(notas)])
+        return self._clone_notas()
+
+    def _clone_notas(self):
+        le_json = self.con.cursor().execute('SELECT json FROM nota WHERE tia=?', [self.user]).fetchone()[0]
+        LOG.info('Clone notas para ' + str(self.user) + '\n\n' + le_json)
+        self.notas = json.loads(le_json)
+        return self.notas
+
+    def _extract_notas(self, html):
+        refined = OrderedDict()
+        cod_notas = {2: 'A', 3: 'B', 4: 'C', 5: 'D', 6: 'E', 7: 'F', 8: 'G', 9: 'H', 10: 'I', 11: 'J',
+                     12: 'NI1', 13: 'NI2', 14: 'SUB', 15: 'PARTIC', 16: 'MI', 17: 'PF', 18: 'MF'}
+        lists = pd.read_html(html)[1].values.tolist()
+        for i in range(0, len(lists)):
+            l = lists[i]
+            cod_materia = l[0]
+            nome_materia = l[1]
+            refined[nome_materia] = {'id': cod_materia}
+            for j in range(2, len(l)):
+                if cod_notas[j] not in refined:
+                    refined[nome_materia][cod_notas[j]] = l[j]
+        return refined
+
     def get_horarios(self, fetch=False):
         if fetch:
             if not self.login_status['tia']: self.login_tia()
@@ -244,12 +227,11 @@ class Mackenzie():
             return jsonify(horarios).replace('}','').replace('{','').replace('"','').replace(',','')
         return self._clone_horarios().replace('}','').replace('{','').replace('"','').replace(',','')
 
-    def get_notas(self, fetch=False):
-        if not self.login_status['tia']: self.login_tia()
-        if fetch:
-            notas = self._extract_notas(self.session.get(self._tia_notas).text)
-            self.cursor.execute('INSERT OR REPLACE INTO nota VALUES (?,?)', [self.user, jsonify(notas)])
-        return self._clone_notas()
+    def _clone_horarios(self):
+        le_json = self.con.cursor().execute('SELECT json FROM horario WHERE tia=?', [self.user]).fetchone()[0]
+        if le_json: self.horarios = jsonify(json.loads(le_json))
+        else: self.horarios = None 
+        return self.horarios
             
     def _extract_horarios(self, html): # not passing 
         if not self.login_status['tia']: self.login_tia() 
@@ -276,69 +258,15 @@ class Mackenzie():
                 if aula == '--': del refined[k][hora]
         return refined
 
-    def read_html(self,html):
-        datas=[]
-        tables = BeautifulSoup(html,'lxml').select('table.table-bordered.table-striped')
-        for table in tables:
-            data = []
-            for row in table.findAll('tr'):
-                cell = row.findAll('td')
-                le_row = []
-                for point in cell:
-                    le_row.append(re.sub('<\/?(?:td|strong|br\/)>','',
-                        re.sub('<\/?div\s?(?:align=\"\w+\")?>', '',
-                            re.sub('\sbgcolor=\"\w*?\"', '', 
-                                re.sub('\swidth=\"\d+%\"','', str(point))))))
-                data.append(le_row)
-            datas.append(data)
-        return datas
-
-    def _extract_notas(self, html):
-        refined = OrderedDict()
-        cod_notas = {2: 'A', 3: 'B', 4: 'C', 5: 'D', 6: 'E', 7: 'F', 8: 'G', 9: 'H', 10: 'I', 11: 'J',
-                     12: 'NI1', 13: 'NI2', 14: 'SUB', 15: 'PARTIC', 16: 'MI', 17: 'PF', 18: 'MF'}
-        lists = pd.read_html(html)[1].values.tolist()
-        for i in range(0, len(lists)):
-            l = lists[i]
-            cod_materia = l[0]
-            nome_materia = l[1]
-            refined[nome_materia] = {'id': cod_materia}
-            for j in range(2, len(l)):
-                if cod_notas[j] not in refined:
-                    refined[nome_materia][cod_notas[j]] = l[j]
-        return refined
-
 
 # ----------------------------------------------------
 #                       MAIN
 # ----------------------------------------------------
-def process_args(args):
-    argskv = {}
-    key = None
-    value = None
-    for a in args[1:]:
-            if a.startswith('-'):
-                    key = a
-            else:
-                    value = a
-            if key is not None and value is not None:
-                    argskv[key[1:]] = value
-                    key = None
-                    value = None
-            elif key is None:
-                    argskv[value] = True
-            elif value is None:
-                    argskv[key[1:]] = True
-    return argskv
 
-def server_use(argv):
-    argkv = process_args(argv)
+def main():
     bot = RequestHandler()
     bot.start()
     bot.join()
 
-def main(argv):
-    server_use(argv)
-
 if __name__ == '__main__':
-    main(sys.argv)
+    main()
