@@ -1,7 +1,12 @@
+# -*- coding: utf-8 -*-
 from util import *
+import logging
 import json
+import threading
 from hashlib import sha1 # deprecated but fukkit dans fast
+import os.path
 from collections import OrderedDict
+LOG = logging.getLogger(__name__)
 
 def myhash(o): # builtin hash function uses id function which depends on memory location which depends on ToE
         return sha1(o.encode('utf-8')).hexdigest()
@@ -114,6 +119,28 @@ class Tarefa:
         def __str__(self):
             return json.dumps(self.info, ensure_ascii=False, indent=4)
 
+class Broadcaster(threading.Thread):
+    def __init__(self, bot, con, broadcast_file='broadcast.txt'):
+        threading.Thread.__init__(self)
+        self.bot = bot
+        self.con = con
+        self.broadcast_file = broadcast_file
+
+    def get_users(self):
+        cur = self.con.cursor()
+        return [u[0] for u in cur.execute('SELECT chat_id FROM user').fetchall()]
+
+    def run(self):
+        while True:
+            if os.path.isfile(self.broadcast_file):
+                broadcast_file = open(self.broadcast_file, 'r')
+                broadcast = '\n'.join(broadcast_file.readlines())
+                if broadcast:
+                    for u in self.get_users(): 
+                        LOG.debug('Sending broadcast to ' + str(u))
+                        self.bot.sendMessage(u, broadcast)
+                broadcast_file.close()
+                open(self.broadcast_file, 'w').close()
 
 def test_hash():
         m = Materia('a', 'b')

@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
+#import pdb
 import atexit
 import time
 import sys
@@ -6,6 +8,7 @@ import getpass
 import os
 import pickle
 import signal
+import os
 import sqlite3
 from lxml import etree
 from tkinter import *
@@ -13,6 +16,7 @@ import requests
 from bs4 import BeautifulSoup
 from lxml import html
 from collections import OrderedDict
+import pandas as pd
 from entities import Materia, Topico, Subtopico, Tarefa
 from util import *
 import jsonpickle
@@ -27,7 +31,7 @@ LOG_FILE='mackapp.log'
 LOG_FORMAT = "%(levelname)s %(name)s %(asctime)s - %(message)s" 
 logging.basicConfig(filename=LOG_FILE, level=logging.DEBUG, format=LOG_FORMAT, filemode='w')
 LOG = logging.getLogger()
-DEFAULT_SQLITE_FILE = 'mack.sqlite'
+DEFAULT_SQLITE_FILE = os.path.join(os.getcwd(), 'mack.sqlite')
 class Mackenzie():
     def __init__(self, con, user, pwd):
 #                 self.userdata_file = os.path.expanduser(userdata_file)
@@ -132,7 +136,7 @@ class Mackenzie():
 
     def _clone_notas(self):
         le_json = self.con.cursor().execute('SELECT json FROM nota WHERE tia=?', [self.user]).fetchone()[0]
-        LOG.info('Clone notas para ' + self.user + '\n\n' + le_json)
+        LOG.info('Clone notas para ' + str(self.user) + '\n\n' + le_json)
         self.notas = json.loads(le_json)
         return self.notas
 
@@ -244,7 +248,7 @@ class Mackenzie():
         if not self.login_status['tia']: self.login_tia()
         if fetch:
             notas = self._extract_notas(self.session.get(self._tia_notas).text)
-            self.cursor.execute('INSERT OR REPLACE INTO notas VALUES (?,?)', [self.user, jsonify(notas)])
+            self.cursor.execute('INSERT OR REPLACE INTO nota VALUES (?,?)', [self.user, jsonify(notas)])
         return self._clone_notas()
             
     def _extract_horarios(self, html): # not passing 
@@ -290,7 +294,7 @@ class Mackenzie():
         return datas
 
     def _extract_notas(self, html):
-        refined = {}
+        refined = OrderedDict()
         cod_notas = {2: 'A', 3: 'B', 4: 'C', 5: 'D', 6: 'E', 7: 'F', 8: 'G', 9: 'H', 10: 'I', 11: 'J',
                      12: 'NI1', 13: 'NI2', 14: 'SUB', 15: 'PARTIC', 16: 'MI', 17: 'PF', 18: 'MF'}
         lists = pd.read_html(html)[1].values.tolist()
@@ -329,9 +333,6 @@ def process_args(args):
 
 def server_use(argv):
     argkv = process_args(argv)
-    if 'h' in argkv:
-            LOG.debug(mack._server_usage)
-            return
     bot = RequestHandler()
     bot.start()
     bot.join()
@@ -341,4 +342,3 @@ def main(argv):
 
 if __name__ == '__main__':
     main(sys.argv)
-

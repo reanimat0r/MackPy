@@ -1,12 +1,15 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
 from util import *
 import sqlite3
 import sys
 import pickle
 import telepot
+import time
 import os
 import threading
 import logging
+from entities import Broadcaster
 from mackapp import *
 
 """
@@ -50,6 +53,8 @@ interval - alterar intervalo entre checagem de tarefas
 fetch -   Descobrir novas postagens <tarefas|horarios|notas>
 show -     Mostrar <tarefas|horarios|notas>
         ''') # Ctrl+C,Ctrl+V@BotFather
+        broadcaster = Broadcaster(self.bot, self.con)
+        broadcaster.start()
 
     def safe_send(self, chat_id, response):  # this mitigates telepot.exception.TelegramError: 'Bad Request: message is too long'
         if not response: return
@@ -57,7 +62,7 @@ show -     Mostrar <tarefas|horarios|notas>
             messages = split_string(4096, response)
             for m in messages: self.safe_send(chat_id, m)
         else: self.bot.sendMessage(chat_id, response)
-        LOG.debug('Sent message: ' + response + ' to ' + str(chat_id))
+        LOG.debug('Sent message: ' + str(response) + ' to ' + str(chat_id))
 
     def run(self):
         LOG.debug('Awaiting requests.')
@@ -65,11 +70,11 @@ show -     Mostrar <tarefas|horarios|notas>
 
     def insert_new_user(self, chat_id, tia, pwd, username, interval=0):
         try:
-            self.cursor.execute('INSERT INTO users VALUES (?,?,?,?,?,?)',[chat_id,tia,pwd,'',interval,username])
+            self.cursor.execute('INSERT INTO user VALUES (?,?,?,?,?,?)',[chat_id,tia,pwd,'',interval,username])
             self.con.commit()
         except: LOG.error('PROPER ERROR MESSAGE')
     def get_user(self, chat_id):
-        self.cursor.execute('SELECT tia,pwd FROM users WHERE chat_id=?', (chat_id,))
+        self.cursor.execute('SELECT tia,pwd FROM user WHERE chat_id=?', (chat_id,))
         return self.cursor.fetchone()
 
     def _telepot_callback(self, msg):
@@ -91,7 +96,7 @@ show -     Mostrar <tarefas|horarios|notas>
             self.safe_send(chat_id, 'Insira TIA')
             self.pending[chat_id] = 'tia'
         elif text == '/last':
-            self.cursor.execute('SELECT last_refresh FROM users WHERE chat_id=?',[chat_id])
+            self.cursor.execute('SELECT last_refresh FROM user WHERE chat_id=?',[chat_id])
             self.safe_send(chat_id,self.cursor.fetchone()) 
         elif '/fetch' in text:
                 if not chat_id in self.users and not self.get_user(chat_id): 
@@ -167,18 +172,27 @@ show -     Mostrar <tarefas|horarios|notas>
         elif text.startswith('/remind'):  # tarefas, materias, horarios, notas
             pass
         elif text.startswith('/watch'):  # tarefas, materias, horarios, notas
-            pass
+            if text.endswith('notas'):
+                mack = Mackenzie(self.con, *self.get_user(chat_id))
+                prevNotas = mack.get_notas(fetch=True)
+                nextNotas = prevNotas
+                i = 0
+                while set(list(prevNotas.values())[0].values()) == set(list(prevNotas.values())[0].values()) and i < 120:
+                    nextNotas = mack.get_notas(fetch=True)
+                    time.sleep(30)
+                self.safe_send(chat_id, jsonify(nextNotas))
+            else:
+                self.safe_send(chat_id, 'Not Implemented')
+                
+
         elif text.startswith('/interval'):  # tarefas, materias, horarios, notas
             text = text.replace('/interval')
             if len(text) > 1:
-                self.cursor.execute('UPDATE users SET tarefas_interval = ? WHERE chat_id = ?',[int(text[1:]), chat_id])
+                self.cursor.execute('UPDATE user SET tarefas_interval = ? WHERE chat_id = ?',[int(text[1:]), chat_id])
             else:
                 self.safe_send(chat_id, '/interval <fator_horas>')
-                self.safe_send(chat_id, 'Seu intervalo eh' + self.con.execute('SELECT tarefas_interval FROM users WHERE chat_id=?',[chat_id]).fetchone())
+                self.safe_send(chat_id, 'Seu intervalo eh' + self.con.execute('SELECT tarefas_interval FROM user WHERE chat_id=?',[chat_id]).fetchone())
         else:
             friendly_help = re.sub('(?:{|}|\")|^\s+|^\t+|\'','',str(self.help).replace(',','\n').replace('  /','/'))
             self.safe_send(chat_id,friendly_help)
 
-if __name__  == '__main__':
-        pass
-#         rh = RequestHandler()
