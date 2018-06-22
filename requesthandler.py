@@ -64,7 +64,7 @@ show -     Mostrar <tarefas|horarios|notas>
             self.send(user[0], 'Novas tarefas encontradas [BETA]: ')
             self.send(user[0], novas_msg)
         time.sleep(500)
-        routine_check(user)
+        self.routine_check(user)
 
     def send(self, chat_id, response):  # this mitigates telepot.exception.TelegramError: 'Bad Request: message is too long'
         if not response: return
