@@ -42,8 +42,8 @@ class Materia: # adc nom prof
 
         def __str__(self):
                 return '\n\t' + self.name +\
-                       '\n\t' + self.link +\
-                       '\n\t'.join([str(t) for t in self.topicos]) + '\n'
+                       '\n\t' + self.link
+#                        '\n\t'.join([str(t) for t in self.topicos]) + '\n'
 
 
 class Topico:
@@ -148,7 +148,3 @@ def test_hash():
         m.topicos[0].subtopicos.append(Subtopico('d', 'e', 'f'))
         m.topicos[0].subtopicos[0].tarefas.append(Tarefa())
         print(m.hash())
-
-
-# if __name__ == '__main__':
-#       test_hash()

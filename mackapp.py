@@ -1,6 +1,5 @@
 #!/usr/bin/python3
 # -*- coding: utf-8 -*-
-#import pdb
 import atexit
 import time
 import sys
@@ -29,8 +28,9 @@ import logging
 signal.signal(signal.SIGINT | signal.SIGKILL, exit_gracefully)  # does OR gating work in this scenario?
 LOG_FILE='mackapp.log'
 LOG_FORMAT = "%(levelname)s %(name)s %(asctime)s - %(message)s" 
-logging.basicConfig(filename=LOG_FILE, level=logging.DEBUG, format=LOG_FORMAT, filemode='w')
-LOG = logging.getLogger()
+LOG = logging.getLogger(__name__)
+LOG.setLevel(logging.getLevelName('DEBUG'))
+LOG.addHandler(logging.StreamHandler(sys.stdout))
 DEFAULT_SQLITE_FILE = os.path.join(os.getcwd(), 'mack.sqlite')
 class Mackenzie():
 
@@ -45,8 +45,9 @@ class Mackenzie():
             self._tia_horarios = self._tia_home + 'horarChamada.php'
             self._tia_notas = self._tia_home + 'notasChamada.php'
             self.session = requests.session()
-            self.con = con;
-            self.cursor = con.cursor()
+            if con:
+                self.con = con;
+                self.cursor = con.cursor()
             self.busy = False
             self.user = user
             self.pwd = pwd
@@ -56,14 +57,13 @@ class Mackenzie():
     #                       MOODLE
     # ----------------------------------------------------
     def login_moodle(self):
-        LOG.debug('logging in moodle for ' + str(self.user))
+        LOG.debug('Logging in moodle for ' + str(self.user))
         self.logging_in_moodle = True
-        #session_moodle = r1.cookies['MoodleSessionmoodle']
-        res = self.session.post(self._moodle_login, data={'username': self.user, 'password': self.pwd}, headers={}, allow_redirects=True)
+        res = self.session.post(self._moodle_login, data={'username': self.user, 'password': self.pwd}, allow_redirects=True)
         res = self.session.get('https://moodle.mackenzie.br/moodle/login/index.php?testsession=25632')
         res = self.session.get('https://moodle.mackenzie.br/moodle/')
         self.login_status['moodle'] = 'Minhas Disciplinas/Cursos' in res.text
-        LOG.debug(str(self.user) + (' not' if not self.login_status['moodle'] else '') + ' logged in')
+        LOG.debug(str(self.user) +' logged in: ' + str(self.login_status['moodle']))
         return self.login_status['moodle']
 
     def get_tarefas(self, fetch=False):
@@ -80,6 +80,12 @@ class Mackenzie():
         filtro = lambda x: 'Avaliado' not in x.info['Status da avaliação'] and 'nviado' not in x.info['Status da avaliação'] and parse_datetime_moodle(x.info['Data de entrega']) > datetime.datetime.now()
         filtered_diff = filter(filtro, diff)
         return filtered_diff
+
+    def _clone_tarefas(self):
+        self._clone_materias()
+        tarefas = []
+        for m in self.materias: tarefas.extend(m.all_tarefas())
+        return [t for t in sorted(tarefas, key=lambda t: t.due_date)]
 
     def update_materias(self):
         self.materias
@@ -102,17 +108,17 @@ class Mackenzie():
                     print([str(t) for t in materias1[i].all_tarefas()])
         return report           
 
-    def get_materias(self, fetch=False, diff=False, v=True):
-        if not self.login_status['moodle']: self.login_moodle()
+    def get_materias(self, fetch=False, diff=False):
         if fetch: 
-            self.materias = self._fetch_materias(self.session.get(self._moodle_home).text, v=v)
+            if not self.login_status['moodle']: self.login_moodle()
+            self.materias = self._fetch_materias(self.session.get(self._moodle_home).text)
             self.cursor.execute('INSERT OR REPLACE INTO materia VALUES(?,?)', [self.user, jsonpickle.encode(self.materias)])
             self.cursor.execute('UPDATE user SET last_refresh=? WHERE tia=?', [time.strftime('%d/%m/%Y %H:%M'), self.user])
             self.con.commit()
         else: self._clone_materias()
         return self.materias
 
-    def _fetch_materias(self, html,v=False):
+    def _fetch_materias(self, html):
         materias = []
         v = False
         bs = BeautifulSoup(html, 'lxml')
@@ -124,8 +130,6 @@ class Mackenzie():
                     materia = Materia(a['title'], a['href'])
                     if not any(materia.name in m.name for m in materias):
                         materias.append(materia)
-        if v >= 1:
-            for m in materias: print(m.hash(), str(m))
         for materia in materias:
             bs = BeautifulSoup(self.session.get(materia.link).text, 'lxml')
             i = 1
@@ -150,7 +154,7 @@ class Mackenzie():
                         if sub_topic_type == 'Tarefa':
                             tarefa_page = BeautifulSoup(self.session.get(sub_topic_link).text, 'lxml')
                             tarefa_name = tarefa_page.find_all('h2')[0].text
-                            LOG.debug('Acquiring tarefa: ' + tarefa_name)
+                            LOG.debug('Fetching tarefa: ' + tarefa_name)
                             tarefa_desc = tarefa_page.find_all('div', attrs={'id':'intro'})[0].text
                             tarefa_table = tarefa_page.find_all('table', class_='generaltable')[0]
                             tds = tarefa_table.find_all('td')
@@ -189,11 +193,12 @@ class Mackenzie():
         LOG.debug(str(self.user) + (' not' if not self.login_status['tia'] else ' else ''') + ' logged in')
         return self.login_status['tia']
 
-    def get_notas(self, fetch=False):
+    def get_notas(self, fetch=True):
         if not self.login_status['tia']: self.login_tia()
         if fetch:
             notas = self._extract_notas(self.session.get(self._tia_notas).text)
             self.cursor.execute('INSERT OR REPLACE INTO nota VALUES (?,?)', [self.user, jsonify(notas)])
+            return notas
         return self._clone_notas()
 
     def _clone_notas(self):

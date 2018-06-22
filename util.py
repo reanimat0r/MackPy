@@ -50,7 +50,7 @@ def read_html(self,html):
     for table in tables:
         data = []
         for row in table.findAll('tr'):
-           cell = row.findAll('td')
+            cell = row.findAll('td')
             le_row = []
             for point in cell:
                 le_row.append(re.sub('<\/?(?:td|strong|br\/)>','',
