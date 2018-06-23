@@ -90,8 +90,8 @@ show -     Mostrar <tarefas|horarios|notas>
     def _telepot_callback(self, msg):
         chat_id = msg['chat']['id']
         text = msg['text']
-        LOG.debug(str(chat_id) + ' ' + msg['text'])
         username = msg['from']['username'] if 'from' in msg and 'username' in msg['from'] else ''
+        LOG.debug(str(chat_id) + ':' + username + ':' + msg['text'])
 
         mack = get_instance(self.con, *self.get_user(chat_id))
         if chat_id in self.pending:
@@ -166,7 +166,6 @@ show -     Mostrar <tarefas|horarios|notas>
                 elif what == 'notas':
                     notas = mack.get_notas()
                     response = notas
-                    self.send(chat_id, notas)
                 elif what == 'horarios':
                     horarios = mack.get_horarios()
                     response = horarios

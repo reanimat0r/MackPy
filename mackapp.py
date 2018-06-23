@@ -154,7 +154,7 @@ class Mackenzie():
                         if sub_topic_type == 'Tarefa':
                             tarefa_page = BeautifulSoup(self.session.get(sub_topic_link).text, 'lxml')
                             tarefa_name = tarefa_page.find_all('h2')[0].text
-                            LOG.debug('Fetching tarefa: ' + tarefa_name)
+                            LOG.debug('Fetching tarefa: ' + str(tarefa_name.encode('utf-8')))
                             tarefa_desc = tarefa_page.find_all('div', attrs={'id':'intro'})[0].text
                             tarefa_table = tarefa_page.find_all('table', class_='generaltable')[0]
                             tds = tarefa_table.find_all('td')
