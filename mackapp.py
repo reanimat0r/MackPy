@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import atexit
 import time
@@ -31,7 +31,6 @@ LOG_FORMAT = "%(levelname)s %(name)s %(asctime)s - %(message)s"
 LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.getLevelName('DEBUG'))
 LOG.addHandler(logging.StreamHandler(sys.stdout))
-DEFAULT_SQLITE_FILE = os.path.join(os.getcwd(), 'mack.sqlite')
 class Mackenzie():
 
     def __init__(self, con, user, pwd):

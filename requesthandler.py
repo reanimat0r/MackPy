@@ -27,6 +27,11 @@ def get_instance(con, user, pwd):
     if user not in macks: macks[user] = Mackenzie(con, user, pwd)
     return macks[user] 
 
+if os.path.isfile(os.path.join(os.environ['HOME'], 'mack.sqlite')): 
+    DEFAULT_SQLITE_FILE = os.path.join(os.environ['HOME'], 'mack.sqlite')
+elif os.path.isfile(os.path.join(os.getcwd(), 'mack.sqlite')):
+    DEFAULT_SQLITE_FILE = os.path.join(os.getcwd(), 'mack.sqlite')
+else: print('no database file in home nor current directory, exiting') or sys.exit(1)
 
 class RequestHandler(threading.Thread):
     def __init__(self):
@@ -139,7 +144,6 @@ show -     Mostrar <tarefas|horarios|notas>
                     self.send(chat_id, 'Fetching horários')
                     mack = get_instance(self.con, *self.get_user(chat_id))
                     horarios = mack.get_horarios(fetch=True)
-                    LOG.debug(type(horarios))
                     if not horarios: self.send(chat_id, '/fetch failed')
                     else: self.send(chat_id, horarios)
                 else:
@@ -165,7 +169,7 @@ show -     Mostrar <tarefas|horarios|notas>
                     response = '\n'.join([str(t) for t in tarefas])
                 elif what == 'notas':
                     notas = mack.get_notas()
-                    response = notas
+                    response = jsonify(notas)
                 elif what == 'horarios':
                     horarios = mack.get_horarios()
                     response = horarios
