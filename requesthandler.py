@@ -22,16 +22,18 @@ LOG.setLevel(logging.getLevelName('DEBUG'))
 LOG.addHandler(logging.StreamHandler(sys.stdout))
 
 macks = {}
+routines = {}
+event_routines = {}
 
 def get_instance(con, user, pwd):
     if user not in macks: macks[user] = Mackenzie(con, user, pwd)
     return macks[user] 
-
-if os.path.isfile(os.path.join(os.environ['HOME'], 'mack.sqlite')): 
-    DEFAULT_SQLITE_FILE = os.path.join(os.environ['HOME'], 'mack.sqlite')
-elif os.path.isfile(os.path.join(os.getcwd(), 'mack.sqlite')):
-    DEFAULT_SQLITE_FILE = os.path.join(os.getcwd(), 'mack.sqlite')
-else: print('no database file in home nor current directory, exiting') or sys.exit(1)
+DEFAULT_SQLITE_FILE = 'mack.sqlite'
+if os.path.isfile(os.path.join(os.environ['HOME'], DEFAULT_SQLITE_FILE)): 
+    DEFAULT_SQLITE_FILE = os.path.join(os.environ['HOME'], DEFAULT_SQLITE_FILE)
+elif os.path.isfile(os.path.join(os.getcwd(), DEFAULT_SQLITE_FILE)):
+    DEFAULT_SQLITE_FILE = os.path.join(os.getcwd(), DEFAULT_SQLITE_FILE)
+else: print('no database file in home nor current directories, exiting') or sys.exit(1)
 
 class RequestHandler(threading.Thread):
     def __init__(self):
@@ -42,38 +44,44 @@ class RequestHandler(threading.Thread):
         self.cursor = self.con.cursor()
         self.users = {}
         users_table = self.cursor.execute('SELECT chat_id,tia,pwd,tarefas_interval FROM user').fetchall()
-        d = datetime.datetime.now()
-        for user in users_table:
-            threading.Thread(target=self.routine_check, args=[user]).start()
+        for user in users_table: 
+            chat_id = user[0]
+            event = threading.Event()
+            event_routines[chat_id] = event
+            routines[chat_id] = threading.Thread(target=self.routine_check, args=[user, event])
+            routines[chat_id].start()
         try: self.bot = telepot.Bot(os.environ['MACK_BOT_TOKEN'])
         except: 
             LOG.error('\n'*30, 'CRIE A VARIAVEL DE AMBIENTE MACK_BOT_TOKEN com o token do seu bot', '\n'*30)
-            sys.exit(0)
+            sys.exit(1)
         self.pending = {}  # current awaited response (this can generate conflict between two users?)
         self.help = make_help('''
-start -   Processo de autenticacao
-add -       Sugira uma funcao
+start -   autenticar
+add -       sugerir uma funcao
+tarefas - checar novas tarefas
+horarios - mostrar horarios
+notas - checar notas 
+fetch -   checar novas <materias|tarefas|horarios|notas>
+show -     mostrar <materias|tarefas|horarios|notas>
 interval - alterar intervalo entre checagem de tarefas
-fetch -   Descobrir novas postagens <tarefas|horarios|notas>
-show -     Mostrar <tarefas|horarios|notas>
         ''') # Ctrl+C,Ctrl+V@BotFather
         broadcaster = Broadcaster(self.bot, self.con)
         broadcaster.start()
 
-    def routine_check(self, user):
+    def routine_check(self, user, eventHook):
         LOG.debug('Routine check for ' + str(user[1]))
         mack = get_instance(self.con, *user[1:3])
         novas = mack.get_novas_tarefas()
         novas_msg = '\n'.join(str(t) for t in novas) 
         if len(novas_msg) > 0:
-            self.send(user[0], 'Novas tarefas encontradas [BETA]: ')
+            self.send(user[0], 'Novas tarefas encontradas: ')
             self.send(user[0], novas_msg)
         time.sleep(500)
-        self.routine_check(user)
+        if not eventHook.is_set(): self.routine_check(user, eventHook)
 
-    def send(self, chat_id, response):  # this mitigates telepot.exception.TelegramError: 'Bad Request: message is too long'
+    def send(self, chat_id, response):  
         if not response: return
-        if len(response) > 4096:
+        if len(response) > 4096: # this mitigates telepot.exception.TelegramError: 'Bad Request: message is too long'
             messages = split_string(4096, response)
             for m in messages: self.send(chat_id, m)
         else: self.bot.sendMessage(chat_id, response)
@@ -205,8 +213,17 @@ show -     Mostrar <tarefas|horarios|notas>
                     time.sleep(30)
                 if not tentativas_restantes: self.send(chat_id, 'Nao saiu a nota ainda, tente novamente')
                 self.send(chat_id, jsonify(nextNotas))
+            elif text.endswith('tarefas'):
+                self.send(chat_id, 'tarefas')
+                user = self.get_user(chat_id)
+                if user in event_routines: event_routines[chat_id].set()
+                event = threading.Event()
+                event_routines[chat_id] = event
+                user = tuple([chat_id] + list(user))
+                routines[chat_id] = threading.Thread(target=self.routine_check, args=[user, event])
+                routines[chat_id].start()
             elif text.endswith('/watch'):
-                self.send('/watch <notas>')
+                self.send('/watch <tarefas|notas>')
             else:
                 self.send(chat_id, 'Not Implemented')
                 

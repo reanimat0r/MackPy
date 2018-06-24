@@ -75,10 +75,10 @@ class Mackenzie():
     def get_novas_tarefas(self):
         old_tarefas = self._clone_tarefas()
         new_tarefas = self.get_tarefas(fetch=True)
-        diff = list(set(new_tarefas) - set(old_tarefas))
-        filtro = lambda x: 'Avaliado' not in x.info['Status da avaliação'] and 'nviado' not in x.info['Status da avaliação'] and parse_datetime_moodle(x.info['Data de entrega']) > datetime.datetime.now()
-        filtered_diff = filter(filtro, diff)
-        return filtered_diff
+        diff = [new_tarefas[i] for i in range(len(old_tarefas)) if new_tarefas[i] != old_tarefas[i]]
+#         filtro = lambda x: 'Avaliado' not in x.info['Status da avaliação'] and 'nviado' not in x.info['Status da avaliação'] and parse_datetime_moodle(x.info['Data de entrega']) > datetime.datetime.now()
+#         filtered_diff = filter(filtro, diff)
+        return diff
 
     def _clone_tarefas(self):
         self._clone_materias()
@@ -199,6 +199,15 @@ class Mackenzie():
             self.cursor.execute('INSERT OR REPLACE INTO nota VALUES (?,?)', [self.user, jsonify(notas)])
             return notas
         return self._clone_notas()
+
+    def get_novas_notas(self):
+        old_notas = self.get_notas(fetch=True)
+        new_notas = self.get_notas(fetch=False)
+        code.interact(local=locals())
+        diff = [new_notas[i] for i in range(len(old_notas)) if new_notas[i] != old_notas[i]]
+#         filtro = lambda x: 'Avaliado' not in x.info['Status da avaliação'] and 'nviado' not in x.info['Status da avaliação'] and parse_datetime_moodle(x.info['Data de entrega']) > datetime.datetime.now()
+#         filtered_diff = filter(filtro, diff)
+        return diff
 
     def _clone_notas(self):
         le_json = self.con.cursor().execute('SELECT json FROM nota WHERE tia=?', [self.user]).fetchone()[0]
