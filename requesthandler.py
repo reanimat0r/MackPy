@@ -36,7 +36,7 @@ elif os.path.isfile(os.path.join(os.getcwd(), DEFAULT_SQLITE_FILE)):
 else: print('no database file in home nor current directories, exiting') or sys.exit(1)
 
 class RequestHandler(threading.Thread):
-    def __init__(self):
+    def __init__(self, routine_check=False):
         LOG.debug('Starting request handler')
         threading.Thread.__init__(self)
         self.sessions = {} #chat_id:mack obj
@@ -44,12 +44,13 @@ class RequestHandler(threading.Thread):
         self.cursor = self.con.cursor()
         self.users = {}
         users_table = self.cursor.execute('SELECT chat_id,tia,pwd,tarefas_interval FROM user').fetchall()
-        for user in users_table: 
-            chat_id = user[0]
-            event = threading.Event()
-            event_routines[chat_id] = event
-            routines[chat_id] = threading.Thread(target=self.routine_check, args=[user, event])
-            routines[chat_id].start()
+        if routine_check:
+            for user in users_table: 
+                chat_id = user[0]
+                event = threading.Event()
+                event_routines[chat_id] = event
+                routines[chat_id] = threading.Thread(target=self.routine_check, args=[user, event])
+                routines[chat_id].start()
         try: self.bot = telepot.Bot(os.environ['MACK_BOT_TOKEN'])
         except: 
             LOG.error('\n'*30, 'CRIE A VARIAVEL DE AMBIENTE MACK_BOT_TOKEN com o token do seu bot', '\n'*30)

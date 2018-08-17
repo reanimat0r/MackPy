@@ -69,8 +69,8 @@ class Mackenzie():
         self.get_materias(fetch=fetch)
         tarefas = []
         for m in self.materias: tarefas.extend(m.all_tarefas())
-        sorted_tarefas = sorted(tarefas, key=lambda t: t.due_date)
-        return sorted_tarefas
+        sorted_filtered_tarefas = filter(lambda t: t.due_date > datetime.datetime.now(), sorted(tarefas, key=lambda t: t.due_date)) 
+        return sorted_filtered_tarefas
 
     def get_novas_tarefas(self):
         old_tarefas = self._clone_tarefas()
@@ -153,7 +153,7 @@ class Mackenzie():
                         if sub_topic_type == 'Tarefa':
                             tarefa_page = BeautifulSoup(self.session.get(sub_topic_link).text, 'lxml')
                             tarefa_name = tarefa_page.find_all('h2')[0].text
-                            LOG.debug('Fetching tarefa: ' + str(tarefa_name.encode('utf-8')))
+                            LOG.debug('Fetching tarefa: ' + str(sub_topic_link.encode('utf-8')))
                             tarefa_desc = tarefa_page.find_all('div', attrs={'id':'intro'})[0].text
                             tarefa_table = tarefa_page.find_all('table', class_='generaltable')[0]
                             tds = tarefa_table.find_all('td')
@@ -253,6 +253,7 @@ class Mackenzie():
         dias_lindo = {0:'unda',1:'ca',2:'rta',3:'nta',4:'ta',5:'ado'}
         def extract_table(refined, lists, dias):
             for i in range(1, len(lists)):
+                code.interact(local=locals())
                 l = lists[i]
                 hor = l[0]
                 for j in range(1, len(l)):
@@ -262,9 +263,9 @@ class Mackenzie():
                     try: refined[dias[j - 1]+dias_lindo[j-1]][hor] = re.sub('\s{2,}',' ',re.sub('\t',' ',re.sub('\s\(.*?\)','',l[j][:].replace('\u00c3','e').replace('\u00a9','').replace('\u00e1','a').replace('Predio', ' Predio').replace('Sala', ' Sala'))))
                     except:refined[dias[j - 1]+dias_lindo[j-1]][hor] = l[j] 
             return refined
-        lists = self.read_html(html)[0]
+        lists = pd.read_html(html)[0]
         refined = extract_table(refined, lists, dias)
-        lists = self.read_html(html)[1]
+        lists = pd.read_html(html)[1]
         refined = extract_table(refined, lists, dias)
         for k,v in refined.copy().items():
             for hora,aula in v.copy().items():
