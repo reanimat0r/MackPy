@@ -193,6 +193,10 @@ interval - alterar intervalo entre checagem de tarefas
                 else: response = 'Not implemented'
                 self.send(chat_id, str(e) + '\n' + response)
                 
+        elif text.startswith('/reset'):
+            self.send(chat_id, 'Resetando usuário...')
+            if mack.reset(): self.send(chat_id, 'Resetado com sucesso')
+            else: self.send(chat_id, 'Reset falhou')
         elif text.startswith('/remind'):  # tarefas, materias, horarios, notas
             pass
         elif text.startswith('/watch'):  # tarefas, materias, horarios, notas

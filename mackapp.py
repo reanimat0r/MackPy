@@ -65,12 +65,17 @@ class Mackenzie():
         LOG.debug(str(self.user) +' logged in: ' + str(self.login_status['moodle']))
         return self.login_status['moodle']
 
-    def get_tarefas(self, fetch=False):
+    def get_tarefas(self, fetch=False, ):
         self.get_materias(fetch=fetch)
         tarefas = []
         for m in self.materias: tarefas.extend(m.all_tarefas())
         sorted_filtered_tarefas = filter(lambda t: t.due_date > datetime.datetime.now(), sorted(tarefas, key=lambda t: t.due_date)) 
         return sorted_filtered_tarefas
+
+    def reset(self):
+        tabelas = ['horario', 'materia', 'nota']
+        for t in tabelas: self.con.cursor().execute('DELETE FROM ' + t + ' WHERE tia=?', [self.user])
+        return True
 
     def get_novas_tarefas(self):
         old_tarefas = self._clone_tarefas()
