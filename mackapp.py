@@ -25,7 +25,7 @@ import logging
 # ----------------------------------------------------
 #                       SETUP
 # ----------------------------------------------------
-signal.signal(signal.SIGINT | signal.SIGKILL, exit_gracefully)  # does OR gating work in this scenario?
+signal.signal(signal.SIGINT | signal.SIGKILL, exit_gracefully)
 LOG_FILE='mackapp.log'
 LOG_FORMAT = "%(levelname)s %(name)s %(asctime)s - %(message)s" 
 LOG = logging.getLogger(__name__)
