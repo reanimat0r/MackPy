@@ -1,4 +1,4 @@
-CREATE TABLE `users` (
+CREATE TABLE user(
 	`chat_id`	TEXT NOT NULL UNIQUE,
 	`tia`	INTEGER NOT NULL UNIQUE,
 	`pwd`	TEXT,
@@ -6,7 +6,7 @@ CREATE TABLE `users` (
     `tarefas_interval` INTEGER,
 	PRIMARY KEY(chat_id,tia)
 );
-CREATE TABLE `horarios` (
+CREATE TABLE horario (
 	`tia`			INTEGER NOT NULL UNIQUE,
 	`json`	TEXT,
 	FOREIGN KEY(tia) REFERENCES users(tia)

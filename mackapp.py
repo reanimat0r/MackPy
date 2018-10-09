@@ -31,6 +31,7 @@ LOG_FORMAT = "%(levelname)s %(name)s %(asctime)s - %(message)s"
 LOG = logging.getLogger(__name__)
 LOG.setLevel(logging.getLevelName('DEBUG'))
 LOG.addHandler(logging.StreamHandler(sys.stdout))
+
 class Mackenzie():
 
     def __init__(self, con, user, pwd):

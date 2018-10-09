@@ -8,6 +8,8 @@ import pickle
 import telepot
 import time
 import os
+from os.path import isfile as opi
+from os.path import join as opj
 import threading
 import logging
 from entities import Broadcaster
@@ -28,20 +30,23 @@ event_routines = {}
 def get_instance(con, user, pwd):
     if user not in macks: macks[user] = Mackenzie(con, user, pwd)
     return macks[user] 
-DEFAULT_SQLITE_FILE = 'mack.sqlite'
-if os.path.isfile(os.path.join(os.environ['HOME'], DEFAULT_SQLITE_FILE)): 
-    DEFAULT_SQLITE_FILE = os.path.join(os.environ['HOME'], DEFAULT_SQLITE_FILE)
-elif os.path.isfile(os.path.join(os.getcwd(), DEFAULT_SQLITE_FILE)):
-    DEFAULT_SQLITE_FILE = os.path.join(os.getcwd(), DEFAULT_SQLITE_FILE)
-else: print('no database file in home nor current directories, exiting') or sys.exit(1)
 
 class RequestHandler(threading.Thread):
-    def __init__(self, routine_check=False):
+    def __init__(self, default_sqlite_file='mack.sqlite', routine_check=False):
         LOG.debug('Starting request handler')
         threading.Thread.__init__(self)
         self.sessions = {} #chat_id:mack obj
-        self.con = sqlite3.connect(DEFAULT_SQLITE_FILE, check_same_thread=False)
+        if opi(opj(os.environ['HOME'], default_sqlite_file)): 
+            default_sqlite_file = opj(os.environ['HOME'], default_sqlite_file)
+        elif opi(opj(os.getcwd(), default_sqlite_file)): 
+            default_sqlite_file = opj(os.getcwd(), default_sqlite_file)
+        if not opi(default_sqlite_file):
+            if input('no database file in home nor current directories, create? [Y/n]').lower() in ['', 'y']: init_query = True
+            else: sys.exit(0)
+        self.con = sqlite3.connect(default_sqlite_file, check_same_thread=False)
         self.cursor = self.con.cursor()
+        query = ''.join(open('create.sql').readlines())
+        if not len(self.cursor.execute('SELECT name FROM sqlite_master WHERE type = "table"').fetchall()): self.cursor.executescript(query)
         self.users = {}
         users_table = self.cursor.execute('SELECT chat_id,tia,pwd,tarefas_interval FROM user').fetchall()
         if routine_check:
@@ -66,6 +71,7 @@ fetch -   checar novas <materias|tarefas|horarios|notas>
 show -     mostrar <materias|tarefas|horarios|notas>
 interval - alterar intervalo entre checagem de tarefas
         ''') # Ctrl+C,Ctrl+V@BotFather
+        LOG.debug('Creating broadcaster')
         broadcaster = Broadcaster(self.bot, self.con)
         broadcaster.start()
 
@@ -92,7 +98,7 @@ interval - alterar intervalo entre checagem de tarefas
         LOG.debug('Awaiting requests.')
         self.bot.message_loop(self._telepot_callback, run_forever=True)
 
-    def insert_new_user(self, chat_id, tia, pwd, username, interval=0):
+    def insert_new_user(self, chat_id, tia, pwd, username='', interval=0):
         try:
             self.cursor.execute('INSERT INTO user VALUES (?,?,?,?,?,?)',[chat_id,tia,pwd,'',interval,username])
             self.con.commit()
@@ -107,7 +113,6 @@ interval - alterar intervalo entre checagem de tarefas
         username = msg['from']['username'] if 'from' in msg and 'username' in msg['from'] else ''
         LOG.debug(str(chat_id) + ':' + username + ':' + msg['text'])
 
-        mack = get_instance(self.con, *self.get_user(chat_id))
         if chat_id in self.pending:
             if chat_id not in self.users: self.users.update({chat_id: {}})
             self.users[chat_id][self.pending[chat_id]] = text
@@ -118,7 +123,9 @@ interval - alterar intervalo entre checagem de tarefas
                 self.pending.pop(chat_id) # done with startup
                 self.insert_new_user(chat_id,self.users[chat_id]['tia'],self.users[chat_id]['pwd'])
                 self.send(chat_id, 'Comandos: \n' + str(self.help))
-        elif text == '/start':
+        user = self.get_user(chat_id)
+        if user: mack = get_instance(self.con, *user)
+        if text == '/start':
             self.send(chat_id, 'Insira TIA')
             self.pending[chat_id] = 'tia'
         elif text == '/last':
@@ -157,11 +164,8 @@ interval - alterar intervalo entre checagem de tarefas
                     else: self.send(chat_id, horarios)
                 else:
                     self.send(chat_id, '/fetch <materias|horarios|notas')
-        elif text == '/tarefas': # alias
-            msg['text'] = '/fetch tarefas'
-            self._telepot_callback(msg)
-        elif text == '/horarios': # alias
-            msg['text'] = '/show horarios'
+        elif text == '/tarefas' or  text == '/horarios' or text == '/show horarios' or text == '/notas': # aliases
+            msg['text'] = '/show ' + text[1:]
             self._telepot_callback(msg)
         elif text.startswith('/add'): 
             what = text.replace('/add ','')
@@ -171,7 +175,7 @@ interval - alterar intervalo entre checagem de tarefas
         elif text.startswith('/show'):  # tarefas, materias, horarios, notas
             try:
                 what = text.replace('/show','').strip()
-                mack = get_instance(self.con, *self.get_user(chat_id))
+                mack = mack.(self.con, *self.get_user(chat_id))
                 response = ''
                 if what  == 'tarefas':
                     tarefas = mack.get_tarefas()
@@ -243,4 +247,16 @@ interval - alterar intervalo entre checagem de tarefas
         else:
             friendly_help = re.sub('(?:{|}|\")|^\s+|^\t+|\'','',str(self.help).replace(',','\n').replace('  /','/'))
             self.send(chat_id,friendly_help)
+
+# ----------------------------------------------------
+#                       MAIN
+# ----------------------------------------------------
+
+def main():
+    bot = RequestHandler()
+    bot.start()
+    bot.join()
+
+if __name__ == '__main__':
+    main()
 
