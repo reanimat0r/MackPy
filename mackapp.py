@@ -21,6 +21,7 @@ from util import *
 import jsonpickle
 from requesthandler import *
 import logging
+import pdb
 
 # ----------------------------------------------------
 #                       SETUP
@@ -66,11 +67,11 @@ class Mackenzie():
         LOG.debug(str(self.user) +' logged in: ' + str(self.login_status['moodle']))
         return self.login_status['moodle']
 
-    def get_tarefas(self, fetch=False, ):
+    def get_tarefas(self, fetch=False):
         self.get_materias(fetch=fetch)
         tarefas = []
         for m in self.materias: tarefas.extend(m.all_tarefas())
-        sorted_filtered_tarefas = filter(lambda t: t.due_date > datetime.datetime.now(), sorted(tarefas, key=lambda t: t.due_date)) 
+        sorted_filtered_tarefas = list(filter(lambda t: t.due_date > datetime.datetime.now(), sorted(tarefas, key=lambda t: t.due_date)))
         return sorted_filtered_tarefas
 
     def reset(self):
@@ -81,19 +82,16 @@ class Mackenzie():
     def get_novas_tarefas(self):
         old_tarefas = self._clone_tarefas()
         new_tarefas = self.get_tarefas(fetch=True)
-        diff = [new_tarefas[i] for i in range(len(old_tarefas)) if new_tarefas[i] != old_tarefas[i]]
-#         filtro = lambda x: 'Avaliado' not in x.info['Status da avaliação'] and 'nviado' not in x.info['Status da avaliação'] and parse_datetime_moodle(x.info['Data de entrega']) > datetime.datetime.now()
-#         filtered_diff = filter(filtro, diff)
-        return diff
+        filtro = lambda x: 'Avaliado' not in x.info['Status da avaliação'] and 'nviado' not in x.info['Status da avaliação'] and parse_datetime_moodle(x.info['Data de entrega']) > datetime.datetime.now()
+        filtered_diff = list(filter(filtro, list(set(old_tarefas) - set(new_tarefas))))
+        code.interact(local=locals())
+        return filtered_diff
 
     def _clone_tarefas(self):
         self._clone_materias()
         tarefas = []
         for m in self.materias: tarefas.extend(m.all_tarefas())
         return [t for t in sorted(tarefas, key=lambda t: t.due_date)]
-
-    def update_materias(self):
-        self.materias
 
     def _clone_materias(self):
         le_json = ''
@@ -123,10 +121,12 @@ class Mackenzie():
         else: self._clone_materias()
         return self.materias
 
-    def _fetch_materias(self, html):
+#     def _extract_tarefas(self, tarefa_page):
+
+    def _fetch_materias(self, le_html):
         materias = []
         v = False
-        bs = BeautifulSoup(html, 'lxml')
+        bs = BeautifulSoup(le_html, 'lxml')
         as_ = bs.find_all('a', href=True)
         for a in as_:
             if 'course' in a['href'] and a.get('title') is not None:
@@ -137,7 +137,7 @@ class Mackenzie():
                         materias.append(materia)
         for materia in materias:
             bs = BeautifulSoup(self.session.get(materia.link).text, 'lxml')
-            i = 1
+            i = 0
             no_topic_name_count = 10
             while True:
                 sec = bs.find(id='section-' + str(i))
@@ -148,6 +148,7 @@ class Mackenzie():
                         no_topic_name_count -= 1
                         if not no_topic_name_count: break
                         continue
+#                 code.interact(local=locals())
                 materia.topicos.append(Topico(topic_name))
                 for a in as_:
                     if a.get('onclick') is not None:
@@ -209,7 +210,6 @@ class Mackenzie():
     def get_novas_notas(self):
         old_notas = self.get_notas(fetch=True)
         new_notas = self.get_notas(fetch=False)
-        code.interact(local=locals())
         diff = [new_notas[i] for i in range(len(old_notas)) if new_notas[i] != old_notas[i]]
 #         filtro = lambda x: 'Avaliado' not in x.info['Status da avaliação'] and 'nviado' not in x.info['Status da avaliação'] and parse_datetime_moodle(x.info['Data de entrega']) > datetime.datetime.now()
 #         filtered_diff = filter(filtro, diff)
@@ -221,11 +221,11 @@ class Mackenzie():
         self.notas = json.loads(le_json)
         return self.notas
 
-    def _extract_notas(self, html):
+    def _extract_notas(self, le_html):
         refined = OrderedDict()
         cod_notas = {2: 'A', 3: 'B', 4: 'C', 5: 'D', 6: 'E', 7: 'F', 8: 'G', 9: 'H', 10: 'I', 11: 'J',
                      12: 'NI1', 13: 'NI2', 14: 'SUB', 15: 'PARTIC', 16: 'MI', 17: 'PF', 18: 'MF'}
-        lists = pd.read_html(html)[1].values.tolist()
+        lists = pd.read_html(le_html)[1].values.tolist()
         for i in range(0, len(lists)):
             l = lists[i]
             cod_materia = l[0]
@@ -252,32 +252,10 @@ class Mackenzie():
         else: self.horarios = None 
         return self.horarios
             
-    def _extract_horarios(self, html): # not passing 
+    def _extract_horarios(self, le_html):
         if not self.login_status['tia']: self.login_tia() 
-        refined = OrderedDict()
-        dias = {0: 'Seg', 1: 'Ter', 2: 'Qua', 3: 'Qui', 4: 'Sex', 5: 'Sab'}
-        dias_lindo = {0:'unda',1:'ca',2:'rta',3:'nta',4:'ta',5:'ado'}
-        def extract_table(refined, lists, dias):
-            for i in range(1, len(lists)):
-                code.interact(local=locals())
-                l = lists[i]
-                hor = l[0]
-                for j in range(1, len(l)):
-                    if str(dias[j - 1]+dias_lindo[j-1]) not in refined:
-                        refined[dias[j - 1]+dias_lindo[j-1]] = []
-                        if hor not in refined[dias[j - 1]+dias_lindo[j-1]]: refined[dias[j - 1]+dias_lindo[j-1]] = OrderedDict()
-                    try: refined[dias[j - 1]+dias_lindo[j-1]][hor] = re.sub('\s{2,}',' ',re.sub('\t',' ',re.sub('\s\(.*?\)','',l[j][:].replace('\u00c3','e').replace('\u00a9','').replace('\u00e1','a').replace('Predio', ' Predio').replace('Sala', ' Sala'))))
-                    except:refined[dias[j - 1]+dias_lindo[j-1]][hor] = l[j] 
-            return refined
-        lists = pd.read_html(html)[0]
-        refined = extract_table(refined, lists, dias)
-        lists = pd.read_html(html)[1]
-        refined = extract_table(refined, lists, dias)
-        for k,v in refined.copy().items():
-            for hora,aula in v.copy().items():
-                if aula == '--': del refined[k][hora]
-        return refined
-
+        table_data = [[cell.text for cell in row("td")] for row in BeautifulSoup(le_html)("tr")][2:]
+        return table_data
 
 # ----------------------------------------------------
 #                       MAIN

@@ -54,8 +54,7 @@ class Topico:
 
         def all_tarefas(self):
                 all_tarefas = []
-                for st in self.subtopicos:
-                        all_tarefas.extend(st.tarefas)
+                for st in self.subtopicos: all_tarefas.extend(st.tarefas)
                 return all_tarefas
 
         def hash(self):
@@ -93,7 +92,7 @@ class Subtopico:
                    '\n\t\t\t'.join([str(trf) for trf in self.tarefas]) + '\n\t\t'
 
 
-class Tarefa:
+class Tarefa(object):
         def __init__(self, tarefa_name, tarefa_desc):
             self.info = OrderedDict({'Título':tarefa_name, 'Descrição':tarefa_desc[:140] if len(tarefa_desc) > 140 else tarefa_desc}) # reconsiderar esta merda toda
             self.due_date = None
@@ -115,6 +114,9 @@ class Tarefa:
                 other_aux_info.pop('Tempo restante')
                 return aux_info == other_aux_info
             else: return False
+
+        def repr(self):
+            return self.__str__();
 
         def __str__(self):
             return json.dumps(self.info, ensure_ascii=False, indent=4)

@@ -14,7 +14,8 @@ import threading
 import logging
 from entities import Broadcaster
 from mackapp import *
-
+import code
+import traceback
 """
 
 """
@@ -32,7 +33,7 @@ def get_instance(con, user, pwd):
     return macks[user] 
 
 class RequestHandler(threading.Thread):
-    def __init__(self, default_sqlite_file='mack.sqlite', routine_check=False):
+    def __init__(self, default_sqlite_file='mack.sqlite', routine_check=True):
         LOG.debug('Starting request handler')
         threading.Thread.__init__(self)
         self.sessions = {} #chat_id:mack obj
@@ -100,9 +101,10 @@ interval - alterar intervalo entre checagem de tarefas
 
     def insert_new_user(self, chat_id, tia, pwd, username='', interval=0):
         try:
-            self.cursor.execute('INSERT INTO user VALUES (?,?,?,?,?,?)',[chat_id,tia,pwd,'',interval,username])
+            self.cursor.execute('INSERT INTO user VALUES (?,?,?,?,?)',[chat_id,tia,pwd,'',interval])
             self.con.commit()
         except: LOG.error('PROPER ERROR MESSAGE')
+
     def get_user(self, chat_id):
         self.cursor.execute('SELECT tia,pwd FROM user WHERE chat_id=?', (chat_id,))
         return self.cursor.fetchone()
@@ -112,22 +114,27 @@ interval - alterar intervalo entre checagem de tarefas
         text = msg['text']
         username = msg['from']['username'] if 'from' in msg and 'username' in msg['from'] else ''
         LOG.debug(str(chat_id) + ':' + username + ':' + msg['text'])
-
-        if chat_id in self.pending:
-            if chat_id not in self.users: self.users.update({chat_id: {}})
-            self.users[chat_id][self.pending[chat_id]] = text
-            if self.pending[chat_id] == 'tia':
-                self.pending[chat_id] = 'pwd'
-                self.send(chat_id, 'Insira senha')
-            elif self.pending[chat_id] == 'pwd':
-                self.pending.pop(chat_id) # done with startup
-                self.insert_new_user(chat_id,self.users[chat_id]['tia'],self.users[chat_id]['pwd'])
-                self.send(chat_id, 'Comandos: \n' + str(self.help))
         user = self.get_user(chat_id)
+        if not user:
+            if chat_id in self.pending.keys():
+                if not 'pwd' in self.pending[chat_id].keys() and 'tia' in self.pending[chat_id].keys():
+                    self.pending[chat_id]['tia'] = text
+                    self.pending[chat_id]['pwd'] = None
+                    self.send(chat_id, 'Insira senha')
+                    return 
+                if 'pwd' in self.pending[chat_id].keys():
+                    self.pending[chat_id]['pwd'] = text
+                    self.insert_new_user(chat_id, self.pending[chat_id]['tia'], self.pending[chat_id]['pwd'], username=username if username else '', interval=0)
+                    self.pending.pop(chat_id)
+                    self.send(chat_id, 'Autenticação registrada')
+                    return 
         if user: mack = get_instance(self.con, *user)
         if text == '/start':
+            if self.get_user(chat_id): 
+                self.send(chat_id, 'autenticado como %d' % user[0])
+                return 
             self.send(chat_id, 'Insira TIA')
-            self.pending[chat_id] = 'tia'
+            self.pending.update({chat_id : {'tia':None}})
         elif text == '/last':
             self.cursor.execute('SELECT last_refresh FROM user WHERE chat_id=?',[chat_id])
             self.send(chat_id,self.cursor.fetchone()) 
@@ -164,7 +171,7 @@ interval - alterar intervalo entre checagem de tarefas
                     else: self.send(chat_id, horarios)
                 else:
                     self.send(chat_id, '/fetch <materias|horarios|notas')
-        elif text == '/tarefas' or  text == '/horarios' or text == '/show horarios' or text == '/notas': # aliases
+        elif text == '/tarefas' or  text == '/horarios' or text == '/notas': # aliases
             msg['text'] = '/show ' + text[1:]
             self._telepot_callback(msg)
         elif text.startswith('/add'): 
@@ -175,10 +182,10 @@ interval - alterar intervalo entre checagem de tarefas
         elif text.startswith('/show'):  # tarefas, materias, horarios, notas
             try:
                 what = text.replace('/show','').strip()
-                mack = mack.(self.con, *self.get_user(chat_id))
+                mack = get_instance(self.con, *self.get_user(chat_id))
                 response = ''
                 if what  == 'tarefas':
-                    tarefas = mack.get_tarefas()
+                    tarefas = mack.get_tarefas(fetch=True)
                     response = '\n'.join([str(t) for t in tarefas])
                 elif what == 'notas':
                     notas = mack.get_notas()
@@ -192,10 +199,8 @@ interval - alterar intervalo entre checagem de tarefas
                 elif not what:
                     self.send(chat_id, 'Uso: /show <tarefas|materias|horarios|notas>')
                 self.send(chat_id, response)
-            except Exception as e: 
-                if text in self.help: response = jsonify(self.help[text])
-                else: response = 'Not implemented'
-                self.send(chat_id, str(e) + '\n' + response)
+            except: 
+                self.send(chat_id, traceback.format_exc() + '\n' + response)
                 
         elif text.startswith('/reset'):
             self.send(chat_id, 'Resetando usuário...')
@@ -222,15 +227,15 @@ interval - alterar intervalo entre checagem de tarefas
                     time.sleep(30)
                 if not tentativas_restantes: self.send(chat_id, 'Nao saiu a nota ainda, tente novamente')
                 self.send(chat_id, jsonify(nextNotas))
-            elif text.endswith('tarefas'):
-                self.send(chat_id, 'tarefas')
-                user = self.get_user(chat_id)
-                if user in event_routines: event_routines[chat_id].set()
-                event = threading.Event()
-                event_routines[chat_id] = event
-                user = tuple([chat_id] + list(user))
-                routines[chat_id] = threading.Thread(target=self.routine_check, args=[user, event])
-                routines[chat_id].start()
+#             elif text.endswith('tarefas'):
+#                 self.send(chat_id, 'tarefas')
+#                 user = self.get_user(chat_id)
+#                 if user in event_routines: event_routines[chat_id].set()
+#                 event = threading.Event()
+#                 event_routines[chat_id] = event
+#                 user = tuple([chat_id] + list(user))
+#                 routines[chat_id] = threading.Thread(target=self.routine_check, args=[user, event])
+#                 routines[chat_id].start()
             elif text.endswith('/watch'):
                 self.send('/watch <tarefas|notas>')
             else:
@@ -252,11 +257,8 @@ interval - alterar intervalo entre checagem de tarefas
 #                       MAIN
 # ----------------------------------------------------
 
-def main():
+if __name__ == '__main__':
     bot = RequestHandler()
     bot.start()
     bot.join()
-
-if __name__ == '__main__':
-    main()
 
