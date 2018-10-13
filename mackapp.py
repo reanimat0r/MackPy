@@ -84,7 +84,6 @@ class Mackenzie():
         new_tarefas = self.get_tarefas(fetch=True)
         filtro = lambda x: 'Avaliado' not in x.info['Status da avaliação'] and 'nviado' not in x.info['Status da avaliação'] and parse_datetime_moodle(x.info['Data de entrega']) > datetime.datetime.now()
         filtered_diff = list(filter(filtro, list(set(old_tarefas) - set(new_tarefas))))
-        code.interact(local=locals())
         return filtered_diff
 
     def _clone_tarefas(self):
@@ -148,7 +147,6 @@ class Mackenzie():
                         no_topic_name_count -= 1
                         if not no_topic_name_count: break
                         continue
-#                 code.interact(local=locals())
                 materia.topicos.append(Topico(topic_name))
                 for a in as_:
                     if a.get('onclick') is not None:
